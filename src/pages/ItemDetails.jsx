@@ -2,9 +2,30 @@ import { useEffect, useState, useContext } from "react";
 import { useParams, Link, useLocation, useNavigate } from "react-router-dom";
 import api from "../api/axios";
 import AuthContext from "../context/AuthContext";
-import { MapContainer, TileLayer, Marker } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, useMap } from "react-leaflet";
 import SkeletonText from "../components/skeletons/SkeletonText";
 import "leaflet/dist/leaflet.css";
+
+/* ================= ENABLE ZOOM AFTER CLICK ================= */
+function EnableZoomOnClick() {
+  const map = useMap();
+
+  useEffect(() => {
+    map.scrollWheelZoom.disable(); // disable initially
+
+    const enableZoom = () => {
+      map.scrollWheelZoom.enable();
+    };
+
+    map.on("click", enableZoom);
+
+    return () => {
+      map.off("click", enableZoom);
+    };
+  }, [map]);
+
+  return null;
+}
 
 function ItemDetails() {
   const { id } = useParams();
@@ -34,27 +55,21 @@ function ItemDetails() {
   }, [id]);
 
   /* ================= FETCH UNREAD COUNT ================= */
-  const fetchUnread = async () => {
-    try {
-      const { data } = await api.get("/messages/unread/count");
-      setUnreadCount(data.count);
-    } catch (err) {
-      console.error("Unread fetch error:", err);
-    }
-  };
+  /* ================= FETCH UNREAD COUNT ================= */
+const fetchUnread = async () => {
+  try {
+    const { data } = await api.get("/messages/unread/count");
+    setUnreadCount(data.count);
+  } catch (err) {
+    console.error("Unread fetch error:", err);
+  }
+};
 
-  // 🔥 IMPORTANT FIX:
-  // Re-fetch unread count every time user returns to this page
-  useEffect(() => {
-  if (!user) return;
-
-  const interval = setInterval(() => {
+useEffect(() => {
+  if (user) {
     fetchUnread();
-  }, 1000); // refresh every 1 second
-
-  return () => clearInterval(interval);
+  }
 }, [user]);
-
 
   /* ================= LOADING ================= */
   if (loading) {
@@ -88,7 +103,6 @@ function ItemDetails() {
   const hasLocation =
     typeof latitude === "number" && typeof longitude === "number";
 
-  /* ================= SMART BACK HANDLER ================= */
   const handleBack = () => {
     const from = location.state?.from;
 
@@ -111,7 +125,6 @@ function ItemDetails() {
 
   return (
     <div className="max-w-5xl mx-auto p-6 dark:text-white">
-
       <button
         onClick={handleBack}
         className="text-emerald-600 hover:underline mb-4"
@@ -165,9 +178,14 @@ function ItemDetails() {
       {/* ================= MAP ================= */}
       <div className="rounded-2xl overflow-hidden shadow-lg mb-8">
         {hasLocation ? (
-          <MapContainer center={[latitude, longitude]} zoom={14} className="h-72">
+          <MapContainer
+            center={[latitude, longitude]}
+            zoom={14}
+            className="h-72"
+          >
             <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
             <Marker position={[latitude, longitude]} />
+            <EnableZoomOnClick />
           </MapContainer>
         ) : (
           <div className="h-72 flex items-center justify-center bg-gray-200">
