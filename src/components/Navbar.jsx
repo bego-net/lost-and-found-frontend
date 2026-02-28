@@ -13,6 +13,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Menu, Plus } from "lucide-react";
 import { ModeToggle } from "@/components/ui/mode-toggle";
+import NotificationBell from "./NotificationBell";
 
 /* ================= ACTIVE LINK STYLE ================= */
 const navLinkClass = ({ isActive }) =>
@@ -43,15 +44,17 @@ function Navbar() {
   const closeMenu = () => setOpen(false);
 
   return (
-    <nav className="
+    <nav
+      className="
       sticky top-0 z-50
       backdrop-blur-xl
       bg-[#103B66]/80 dark:bg-gray-900/80
       border-b border-white/10
-    ">
+    "
+    >
       <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
 
-        {/* LOGO */}
+        {/* ================= LOGO ================= */}
         <Link
           to="/"
           className="text-3xl font-extrabold tracking-wide text-white"
@@ -60,7 +63,7 @@ function Navbar() {
         </Link>
 
         {/* ================= DESKTOP ================= */}
-        <div className="hidden md:flex items-center gap-3">
+        <div className="hidden md:flex items-center gap-4">
 
           <NavLink to="/lost-items" className={navLinkClass}>
             Lost Items
@@ -89,12 +92,17 @@ function Navbar() {
             Post Item
           </NavLink>
 
+          {/* 🔔 Notification Bell */}
+          {token && <NotificationBell user={user} />}
+
+          {/* 🌙 Dark Mode Toggle */}
           <ModeToggle />
 
+          {/* 👤 Profile Dropdown */}
           {token ? (
             <DropdownMenu>
               <DropdownMenuTrigger>
-                <Avatar className="cursor-pointer border-2 border-white">
+                <Avatar className="cursor-pointer border-2 border-white hover:scale-105 transition">
                   <AvatarImage src={profileImg} />
                   <AvatarFallback>U</AvatarFallback>
                 </Avatar>
@@ -163,6 +171,13 @@ function Navbar() {
                 Post Item
               </NavLink>
 
+              {/* 🔔 Notification Bell Mobile */}
+              {token && (
+                <div className="flex justify-center">
+                  <NotificationBell user={user} />
+                </div>
+              )}
+
               <ModeToggle />
 
               {token ? (
@@ -197,7 +212,6 @@ function Navbar() {
             </div>
           </SheetContent>
         </Sheet>
-
       </div>
     </nav>
   );
