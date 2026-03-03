@@ -16,35 +16,44 @@ function Login() {
   };
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
-  setLoading(true);
+    e.preventDefault();
+    setLoading(true);
 
-  const loginPromise = api.post("/auth/login", form);
+    const loginPromise = api.post("/auth/login", form);
 
-  toast.promise(loginPromise, {
-    loading: "Signing in...",
-    success: "Login successful 🎉",
-    error: "Invalid email or password ❌",
-  });
+    toast.promise(loginPromise, {
+      loading: "Signing in...",
+      success: "Login successful 🎉",
+      error: "Invalid email or password ❌",
+    });
 
-  try {
-    const res = await loginPromise;
+    try {
+      const res = await loginPromise;
 
-    // 🔥 Backend now returns flat object
-    setToken(res.data.token);
-    setUser(res.data);
+      const userData = res.data;
 
-    // 🔥 Save full user (including token) to localStorage
-    localStorage.setItem("user", JSON.stringify(res.data));
+      // ✅ Save token + user in context
+      setToken(userData.token);
+      setUser(userData);
 
-    setTimeout(() => navigate("/"), 1200);
-  } catch {
-    // error already handled by toast
-  } finally {
-    setLoading(false);
+      // ✅ Save to localStorage
+      localStorage.setItem("user", JSON.stringify(userData));
+
+      // 🔥 ROLE BASED REDIRECT
+      setTimeout(() => {
+  if (userData.role === "admin") {
+    navigate("/admin");
+  } else {
+    navigate("/"); // 👈 normal users go home
   }
-};
+}, 1200);
 
+    } catch {
+      // handled by toast
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-[#E7E7E7] dark:bg-gray-900">

@@ -25,6 +25,7 @@ import AdvancedSearch from "./pages/AdvancedSearch";
 import NotFound from "./pages/NotFound";
 import Chat from "./pages/Chat";
 import Conversation from "./pages/Conversation";
+import AdminDashboard from "./pages/AdminDashboard";
 
 /* OWNER MESSAGE SYSTEM */
 import MyItems from "./pages/MyItems";
@@ -50,6 +51,7 @@ function AnimatedRoutes() {
           {/* ================= AUTH ================= */}
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/admin" element={<AdminDashboard />} />
 
           {/* ================= ITEMS ================= */}
           <Route path="/create" element={<CreateItem />} />
