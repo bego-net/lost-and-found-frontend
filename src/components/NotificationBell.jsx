@@ -3,9 +3,9 @@ import { io } from "socket.io-client";
 import axios from "../api/axios";
 import { useNavigate } from "react-router-dom";
 
-/* ==================================================
-   Create socket ONLY once (outside component)
-================================================== */
+/* ==========================================
+   SOCKET CONNECTION
+========================================== */
 const socket = io("http://localhost:5000", {
   withCredentials: true,
 });
@@ -13,37 +13,43 @@ const socket = io("http://localhost:5000", {
 export default function NotificationBell({ user }) {
   const [notifications, setNotifications] = useState([]);
   const [open, setOpen] = useState(false);
+
   const navigate = useNavigate();
   const dropdownRef = useRef(null);
 
-  /* ==================================================
-     1️⃣ LOAD NOTIFICATIONS
-  ================================================== */
+  /* ==========================================
+     LOAD NOTIFICATIONS
+  ========================================== */
   useEffect(() => {
     if (!user?._id) return;
 
     const loadNotifications = async () => {
       try {
         const res = await axios.get("/notifications");
-        setNotifications(res.data);
+        setNotifications(res.data || []);
       } catch (err) {
-        console.error("Error fetching notifications:", err);
+        console.error("Notification load error:", err);
       }
     };
 
     loadNotifications();
   }, [user?._id]);
 
-  /* ==================================================
-     2️⃣ SOCKET LISTENER
-  ================================================== */
+  /* ==========================================
+     REALTIME SOCKET LISTENER
+  ========================================== */
   useEffect(() => {
     if (!user?._id) return;
 
     socket.emit("userOnline", user._id);
 
     const handleNewNotification = (notification) => {
-      setNotifications((prev) => [notification, ...prev]);
+      setNotifications((prev) => {
+        const exists = prev.some((n) => n._id === notification._id);
+        if (exists) return prev;
+
+        return [notification, ...prev];
+      });
     };
 
     socket.on("newNotification", handleNewNotification);
@@ -53,70 +59,104 @@ export default function NotificationBell({ user }) {
     };
   }, [user?._id]);
 
-  /* ==================================================
-     3️⃣ CLOSE DROPDOWN WHEN CLICK OUTSIDE
-  ================================================== */
+  /* ==========================================
+     CLOSE DROPDOWN WHEN CLICK OUTSIDE
+  ========================================== */
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target)
-      ) {
+    const handleOutsideClick = (e) => {
+      if (!dropdownRef.current?.contains(e.target)) {
         setOpen(false);
       }
     };
 
-    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("mousedown", handleOutsideClick);
+
     return () =>
-      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("mousedown", handleOutsideClick);
   }, []);
 
-  /* ==================================================
-     4️⃣ HANDLE NOTIFICATION CLICK
-  ================================================== */
-  const handleClick = async (notification) => {
-    try {
-      await axios.put(`/notifications/${notification._id}/read`);
+  /* ==========================================
+     CLICK NOTIFICATION
+  ========================================== */
+ const handleClick = async (notification) => {
+  try {
+    await axios.put(`/notifications/${notification._id}/read`);
 
-      setNotifications((prev) =>
-        prev.map((n) =>
-          n._id === notification._id ? { ...n, isRead: true } : n
-        )
-      );
+    setNotifications((prev) =>
+      prev.map((n) =>
+        n._id === notification._id ? { ...n, isRead: true } : n
+      )
+    );
 
-      // Make sure route exists in App.jsx
-      navigate(
-        `/chat/${notification.item?._id}/${notification.sender?._id}`
-      );
+    /* ===============================
+       SAFE ITEM NAVIGATION
+    =============================== */
 
-      setOpen(false);
-    } catch (error) {
-      console.error("Error marking notification as read:", error);
+    const itemId =
+      notification.item?._id || notification.item;
+
+    if (itemId) {
+      navigate(`/item/${itemId}`);
     }
-  };
+
+    setOpen(false);
+
+  } catch (err) {
+    console.error("Notification click error:", err);
+  }
+};
 
   const unreadCount = notifications.filter((n) => !n.isRead).length;
 
-  /* ==================================================
+  /* ==========================================
+     GET MESSAGE TEXT
+  ========================================== */
+  const getMessage = (n) => {
+
+    if (n.type === "match") {
+      const similarity = n.similarity || null;
+
+      if (similarity) {
+        return `🎉 AI found a ${similarity}% match for "${n.item?.title}"`;
+      }
+
+      return `🔎 AI found a similar item: ${n.item?.title || "View item"}`;
+    }
+
+    if (n.type === "message") {
+      return "💬 Sent you a message";
+    }
+
+    if (n.type === "offer") {
+      return "📦 Sent you an offer";
+    }
+
+    return "New notification";
+  };
+
+  /* ==========================================
      UI
-  ================================================== */
+  ========================================== */
   return (
     <div className="relative" ref={dropdownRef}>
-      {/* 🔔 Bell Button */}
+
+      {/* 🔔 Notification Button */}
       <button
         onClick={() => setOpen((prev) => !prev)}
-        className="relative p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition duration-200"
+        className="relative p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition"
       >
         <span className="text-2xl">🔔</span>
 
         {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs px-2 py-0.5 rounded-full shadow">
+          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
             {unreadCount}
           </span>
         )}
       </button>
 
-      {/* 🔽 Dropdown */}
+      {/* ======================================
+          DROPDOWN
+      ====================================== */}
       {open && (
         <div className="absolute right-0 mt-3 w-80 bg-white dark:bg-gray-800 shadow-2xl rounded-xl border border-gray-200 dark:border-gray-700 z-50 max-h-96 overflow-y-auto">
 
@@ -133,44 +173,50 @@ export default function NotificationBell({ user }) {
               <div
                 key={n._id}
                 onClick={() => handleClick(n)}
-                className={`flex items-center gap-3 p-3 cursor-pointer transition hover:bg-gray-100 dark:hover:bg-gray-700 ${
-                  !n.isRead
-                    ? "bg-blue-50 dark:bg-gray-700"
-                    : ""
+                className={`flex items-center gap-3 p-3 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition ${
+                  !n.isRead ? "bg-blue-50 dark:bg-gray-700" : ""
                 }`}
               >
+
+                {/* USER IMAGE */}
                 <img
-                src={
-                  n.sender?.profileImage
-                    ? `http://localhost:5000${n.sender.profileImage}`
-                    : "http://localhost:5000/uploads/default-profile.png"
-           }
-                 alt="avatar"
-                 className="w-10 h-10 rounded-full object-cover"
-            />
+                  src={
+                    n.sender?.profileImage
+                      ? `http://localhost:5000${n.sender.profileImage}`
+                      : "http://localhost:5000/uploads/default-profile.png"
+                  }
+                  alt="avatar"
+                  className="w-10 h-10 rounded-full object-cover"
+                />
 
                 <div className="flex-1">
+
+                  {/* USER NAME */}
                   <p className="font-medium text-sm dark:text-white">
-                    {n.sender?.name || "Unknown User"}
+                    {n.sender?.name || "System"}
                   </p>
 
+                  {/* MESSAGE */}
                   <p className="text-xs text-gray-500 dark:text-gray-400">
-                    Sent you a message
+                    {getMessage(n)}
                   </p>
 
+                  {/* TIME */}
                   <p className="text-xs text-gray-400">
-                    {new Date(
-                      n.createdAt
-                    ).toLocaleString()}
+                    {new Date(n.createdAt).toLocaleString()}
                   </p>
+
                 </div>
 
+                {/* UNREAD DOT */}
                 {!n.isRead && (
                   <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
                 )}
+
               </div>
             ))
           )}
+
         </div>
       )}
     </div>

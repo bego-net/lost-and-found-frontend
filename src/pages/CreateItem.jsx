@@ -5,6 +5,9 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import MapPicker from "../components/MapPicker";
 
+/* NEW AI IMPORT */
+import AIMatchPopup from "../components/AIMatchPopup";
+
 function CreateItem() {
   const navigate = useNavigate();
   const { token } = useContext(AuthContext);
@@ -21,6 +24,10 @@ function CreateItem() {
   const [location, setLocation] = useState({ lat: null, lng: null });
   const [previews, setPreviews] = useState([]);
   const [loading, setLoading] = useState(false);
+
+  /* NEW AI STATES */
+  const [matches, setMatches] = useState([]);
+  const [showPopup, setShowPopup] = useState(false);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -78,8 +85,18 @@ function CreateItem() {
     });
 
     try {
-      await createPromise;
-      setTimeout(() => navigate("/"), 1500);
+
+      /* ====== AI RESPONSE ====== */
+
+      const res = await createPromise;
+
+if (res.data.matches && res.data.matches.length > 0) {
+  setMatches(res.data.matches);
+  setShowPopup(true);
+} else {
+  setTimeout(() => navigate("/"), 1500);
+}
+
     } catch (err) {
       console.error(err);
     } finally {
@@ -209,6 +226,15 @@ function CreateItem() {
           {loading ? "Posting..." : "Post Item"}
         </button>
       </form>
+
+      {/* AI MATCH POPUP */}
+      {showPopup && (
+        <AIMatchPopup
+          matches={matches}
+          onClose={() => setShowPopup(false)}
+        />
+      )}
+
     </div>
   );
 }
