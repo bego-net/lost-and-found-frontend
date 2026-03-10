@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import api from "../api/axios";
 import AuthContext from "../context/AuthContext";
+import { Mail, Lock, ArrowRight, Loader2, ShieldCheck } from "lucide-react";
 
 function Login() {
   const navigate = useNavigate();
@@ -22,89 +23,134 @@ function Login() {
     const loginPromise = api.post("/auth/login", form);
 
     toast.promise(loginPromise, {
-      loading: "Signing in...",
-      success: "Login successful 🎉",
-      error: "Invalid email or password ❌",
+      loading: "Authenticating...",
+      success: "Welcome back!",
+      error: (err) => err.response?.data?.message || "Invalid credentials ❌",
     });
 
     try {
       const res = await loginPromise;
-
       const userData = res.data;
 
-      // ✅ Save token + user in context
       setToken(userData.token);
       setUser(userData);
-
-      // ✅ Save to localStorage
       localStorage.setItem("user", JSON.stringify(userData));
 
-      // 🔥 ROLE BASED REDIRECT
       setTimeout(() => {
-  if (userData.role === "admin") {
-    navigate("/admin");
-  } else {
-    navigate("/"); // 👈 normal users go home
-  }
-}, 1200);
-
-    } catch {
-      // handled by toast
+        if (userData.role === "admin") {
+          navigate("/admin");
+        } else {
+          navigate("/");
+        }
+      }, 1000);
+    } catch (err) {
+      console.error(err);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-[#E7E7E7] dark:bg-gray-900">
-      <form
-        onSubmit={handleSubmit}
-        className="w-full max-w-md bg-white dark:bg-gray-800 p-8
-                   rounded-xl shadow-2xl backdrop-blur-md border border-gray-200 
-                   dark:border-gray-700 transition"
-      >
-        <h2 className="text-3xl font-bold text-center mb-6 text-[#103B66] dark:text-white">
-          Welcome Back
-        </h2>
+    <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-[#0B0F1A] px-4 relative overflow-hidden">
+      {/* Abstract Background Blobs */}
+      <div className="absolute top-[-10%] left-[-10%] w-72 h-72 bg-blue-600/10 rounded-full blur-3xl" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-96 h-96 bg-purple-600/10 rounded-full blur-3xl" />
 
-        <input
-          type="email"
-          name="email"
-          placeholder="Email Address"
-          className="w-full p-3 border rounded-lg mb-4 bg-gray-100 dark:bg-gray-700 
-                     outline-none dark:text-white"
-          onChange={handleChange}
-          required
-        />
+      <div className="w-full max-w-md z-10">
+        {/* Logo/Icon Area */}
+        <div className="flex justify-center mb-8">
+          <div className="p-4 bg-white dark:bg-slate-900 rounded-[2rem] shadow-xl border border-slate-200 dark:border-slate-800">
+            <ShieldCheck className="w-10 h-10 text-blue-600" />
+          </div>
+        </div>
 
-        <input
-          type="password"
-          name="password"
-          placeholder="Password"
-          className="w-full p-3 border rounded-lg mb-4 bg-gray-100 dark:bg-gray-700 
-                     outline-none dark:text-white"
-          onChange={handleChange}
-          required
-        />
+        <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl p-8 sm:p-10 rounded-[3rem] shadow-2xl border border-white dark:border-slate-800">
+          <div className="text-center mb-10">
+            <h2 className="text-3xl font-black text-slate-900 dark:text-white mb-2 tracking-tight">
+              Welcome Back
+            </h2>
+            <p className="text-slate-500 dark:text-slate-400 font-medium text-sm">
+              Enter your details to access your account
+            </p>
+          </div>
 
-        <button
-          disabled={loading}
-          className="w-full bg-[#103B66] text-white py-3 rounded-lg font-semibold 
-                     hover:bg-[#0d2f52] transition disabled:opacity-60"
-        >
-          {loading ? "Signing in..." : "Login"}
-        </button>
+          <form onSubmit={handleSubmit} className="space-y-5">
+            {/* Email Input */}
+            <div className="space-y-2">
+              <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">
+                Email Address
+              </label>
+              <div className="relative group">
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
+                <input
+                  type="email"
+                  name="email"
+                  placeholder="name@example.com"
+                  className="w-full pl-12 pr-4 py-4 bg-slate-100 dark:bg-slate-800/50 border-transparent focus:border-blue-600 focus:bg-white dark:focus:bg-slate-800 border-2 rounded-2xl outline-none transition-all dark:text-white"
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+            </div>
 
-        <p className="text-center mt-4 text-gray-700 dark:text-gray-300">
-          New here?{" "}
-          <Link
-            to="/register"
-            className="text-[#103B66] dark:text-blue-400 font-semibold"
-          >
-            Create an account
-          </Link>
+            {/* Password Input */}
+            <div className="space-y-2">
+              <div className="flex justify-between items-center ml-1">
+                <label className="text-xs font-black uppercase tracking-widest text-slate-400">
+                  Password
+                </label>
+                <Link to="/forgot-password" size={14} className="text-xs font-bold text-blue-600 hover:underline">
+                  Forgot?
+                </Link>
+              </div>
+              <div className="relative group">
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
+                <input
+                  type="password"
+                  name="password"
+                  placeholder="••••••••"
+                  className="w-full pl-12 pr-4 py-4 bg-slate-100 dark:bg-slate-800/50 border-transparent focus:border-blue-600 focus:bg-white dark:focus:bg-slate-800 border-2 rounded-2xl outline-none transition-all dark:text-white"
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+            </div>
+
+            {/* Submit Button */}
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-slate-900 dark:bg-blue-600 text-white py-4 rounded-2xl font-bold flex items-center justify-center gap-2 hover:opacity-90 transition-all transform active:scale-[0.98] disabled:opacity-70 shadow-xl shadow-blue-500/20 mt-8"
+            >
+              {loading ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <>
+                  Sign In <ArrowRight className="w-5 h-5" />
+                </>
+              )}
+            </button>
+          </form>
+
+          {/* Footer */}
+          <div className="mt-10 text-center">
+            <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">
+              Don't have an account?{" "}
+              <Link
+                to="/register"
+                className="text-blue-600 dark:text-blue-400 font-black hover:underline ml-1"
+              >
+                Create Account
+              </Link>
+            </p>
+          </div>
+        </div>
+
+        {/* Bottom Security Badge */}
+        <p className="text-center mt-8 text-slate-400 text-[10px] uppercase font-black tracking-[0.2em]">
+          Securely encrypted & SSL Protected
         </p>
-      </form>
+      </div>
     </div>
   );
 }

@@ -1,13 +1,13 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import api from "../api/axios";
-import { toast } from "sonner"; // ✅ ADD THIS
+import { toast } from "sonner";
+import { User, Mail, Lock, UserPlus, Loader2, ArrowRight, CheckCircle2, ShieldCheck } from "lucide-react";
 
 function Register() {
   const navigate = useNavigate();
 
   const [form, setForm] = useState({ name: "", email: "", password: "" });
-  const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [strength, setStrength] = useState(0);
 
@@ -20,7 +20,6 @@ function Register() {
     }
   };
 
-  // Password strength logic
   const updateStrength = (password) => {
     let score = 0;
     if (password.length >= 6) score++;
@@ -34,109 +33,137 @@ function Register() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setMessage("");
 
     try {
       await api.post("/auth/register", form);
-
-      // ✅ TOAST SUCCESS
-      toast.success("Account created successfully 🎉", {
-        duration: 2500,
-      });
-
-      setMessage("Account created! Redirecting...");
+      toast.success("Account created successfully! 🎉");
       setTimeout(() => navigate("/login"), 1500);
-    } catch {
-      // ✅ TOAST ERROR
-      toast.error("Registration failed ❌", {
-        duration: 2500,
-      });
-
-      setMessage("Registration failed");
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Registration failed ❌");
     } finally {
       setLoading(false);
     }
   };
 
+  const strengthColor = strength <= 2 ? "bg-red-500" : strength <= 4 ? "bg-amber-500" : "bg-emerald-500";
+  const strengthText = strength <= 2 ? "Weak" : strength <= 4 ? "Good" : "Strong";
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#E7E7E7] dark:bg-gray-900">
-      <form
-        onSubmit={handleSubmit}
-        className="w-full max-w-md bg-white dark:bg-gray-800 p-8 rounded-xl shadow-xl
-                  border border-gray-200 dark:border-gray-700"
-      >
-        <h2 className="text-3xl font-bold text-center mb-6 text-[#103B66] dark:text-white">
-          Create Account
-        </h2>
+    <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-[#0B0F1A] px-4 relative overflow-hidden">
+      {/* Background Accents */}
+      <div className="absolute top-[-5%] right-[-5%] w-80 h-80 bg-blue-600/10 rounded-full blur-3xl" />
+      <div className="absolute bottom-[-5%] left-[-5%] w-80 h-80 bg-emerald-600/10 rounded-full blur-3xl" />
 
-        {message && (
-          <p className="p-3 text-center mb-4 rounded bg-blue-100 text-blue-700 
-                        dark:bg-blue-900 dark:text-blue-300">
-            {message}
-          </p>
-        )}
+      <div className="w-full max-w-md z-10">
+        <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl p-8 sm:p-10 rounded-[3rem] shadow-2xl border border-white dark:border-slate-800">
+          
+          <div className="text-center mb-10">
+            <div className="inline-flex p-4 bg-blue-50 dark:bg-blue-500/10 rounded-3xl mb-4 text-blue-600">
+              <UserPlus size={32} />
+            </div>
+            <h2 className="text-3xl font-black text-slate-900 dark:text-white mb-2 tracking-tight">
+              Join Us
+            </h2>
+            <p className="text-slate-500 dark:text-slate-400 font-medium text-sm">
+              Create your account to start reporting items
+            </p>
+          </div>
 
-        <input
-          type="text"
-          name="name"
-          placeholder="Full Name"
-          className="w-full p-3 border rounded-lg mb-4 bg-gray-100 dark:bg-gray-700 
-                     dark:text-white outline-none"
-          onChange={handleChange}
-          required
-        />
+          <form onSubmit={handleSubmit} className="space-y-5">
+            {/* Full Name */}
+            <div className="space-y-2">
+              <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Full Name</label>
+              <div className="relative group">
+                <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
+                <input
+                  type="text"
+                  name="name"
+                  placeholder="John Doe"
+                  className="w-full pl-12 pr-4 py-4 bg-slate-100 dark:bg-slate-800/50 border-transparent focus:border-blue-600 focus:bg-white dark:focus:bg-slate-800 border-2 rounded-2xl outline-none transition-all dark:text-white"
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+            </div>
 
-        <input
-          type="email"
-          name="email"
-          placeholder="Email Address"
-          className="w-full p-3 border rounded-lg mb-4 bg-gray-100 dark:bg-gray-700 
-                     dark:text-white outline-none"
-          onChange={handleChange}
-          required
-        />
+            {/* Email Address */}
+            <div className="space-y-2">
+              <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Email Address</label>
+              <div className="relative group">
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
+                <input
+                  type="email"
+                  name="email"
+                  placeholder="john@example.com"
+                  className="w-full pl-12 pr-4 py-4 bg-slate-100 dark:bg-slate-800/50 border-transparent focus:border-blue-600 focus:bg-white dark:focus:bg-slate-800 border-2 rounded-2xl outline-none transition-all dark:text-white"
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+            </div>
 
-        <input
-          type="password"
-          name="password"
-          placeholder="Password"
-          className="w-full p-3 border rounded-lg mb-2 bg-gray-100 dark:bg-gray-700 
-                     dark:text-white outline-none"
-          onChange={handleChange}
-          required
-        />
+            {/* Password */}
+            <div className="space-y-2">
+              <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Password</label>
+              <div className="relative group">
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
+                <input
+                  type="password"
+                  name="password"
+                  placeholder="••••••••"
+                  className="w-full pl-12 pr-4 py-4 bg-slate-100 dark:bg-slate-800/50 border-transparent focus:border-blue-600 focus:bg-white dark:focus:bg-slate-800 border-2 rounded-2xl outline-none transition-all dark:text-white"
+                  onChange={handleChange}
+                  required
+                />
+              </div>
 
-        {/* 🔥 Password Strength Bar */}
-        <div className="h-2 w-full bg-gray-300 dark:bg-gray-600 rounded mb-4">
-          <div
-            className={`h-2 rounded transition-all ${
-              strength <= 1
-                ? "bg-red-500 w-1/3"
-                : strength <= 3
-                ? "bg-yellow-500 w-2/3"
-                : "bg-green-500 w-full"
-            }`}
-          ></div>
+              {/* Enhanced Password Strength Meter */}
+              {form.password && (
+                <div className="px-1 pt-2">
+                  <div className="flex justify-between items-center mb-1.5">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Security: {strengthText}</span>
+                    {strength >= 5 && <CheckCircle2 size={12} className="text-emerald-500" />}
+                  </div>
+                  <div className="h-1.5 w-full bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
+                    <div 
+                      className={`h-full transition-all duration-500 ${strengthColor}`} 
+                      style={{ width: `${(strength / 5) * 100}%` }}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <button
+              disabled={loading}
+              className="w-full bg-blue-600 text-white py-4 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-blue-700 transition-all transform active:scale-[0.98] disabled:opacity-70 shadow-xl shadow-blue-500/20 mt-8"
+            >
+              {loading ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <>
+                  Create Account <ArrowRight className="w-5 h-5" />
+                </>
+              )}
+            </button>
+          </form>
+
+          <div className="mt-10 text-center">
+            <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">
+              Already a member?{" "}
+              <Link to="/login" className="text-blue-600 dark:text-blue-400 font-black hover:underline ml-1">
+                Login here
+              </Link>
+            </p>
+          </div>
         </div>
 
-        <button
-          disabled={loading}
-          className="w-full bg-[#103B66] text-white py-3 rounded-lg font-semibold 
-                     hover:bg-[#0d2f52] transition"
-        >
-          {loading ? "Creating..." : "Register"}
-        </button>
-
-        <p className="text-center mt-4 dark:text-gray-300">
-          Already have an account?{" "}
-          <Link
-            to="/login"
-            className="text-[#103B66] dark:text-blue-400 font-semibold"
-          >
-            Login here
-          </Link>
-        </p>
-      </form>
+        {/* Minimal Footer Badge */}
+        <div className="flex items-center justify-center gap-2 mt-8 opacity-40">
+           <ShieldCheck size={14} className="dark:text-white" />
+           <span className="text-[10px] uppercase font-black tracking-[0.2em] dark:text-white">Secure Registration</span>
+        </div>
+      </div>
     </div>
   );
 }
