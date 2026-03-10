@@ -55,7 +55,13 @@ module.exports = {
         },
       },
       keyframes: {
-        // High-end floating animation for background blobs
+        // ✨ NEW: Shimmer effect for buttons and cards
+        shimmer: {
+          "100%": {
+            transform: "translateX(100%)",
+          },
+        },
+        // 🎈 Floating background blobs
         blob: {
           "0%": {
             transform: "translate(0px, 0px) scale(1)",
@@ -80,7 +86,7 @@ module.exports = {
         },
       },
       animation: {
-        // Blobs will move at different speeds for a parallax effect
+        shimmer: "shimmer 2s infinite",
         blob: "blob 7s infinite",
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
@@ -89,7 +95,7 @@ module.exports = {
   },
   plugins: [
     require("tailwindcss-animate"),
-    // Adding a small custom plugin to handle animation delays easily
+    // Custom utility plugin
     function ({ addUtilities }) {
       addUtilities({
         ".animation-delay-2000": {
@@ -97,6 +103,13 @@ module.exports = {
         },
         ".animation-delay-4000": {
           "animation-delay": "4s",
+        },
+        // Adds better glassmorphism utilities
+        ".glass": {
+          "background": "rgba(255, 255, 255, 0.05)",
+          "backdrop-filter": "blur(12px)",
+          "-webkit-backdrop-filter": "blur(12px)",
+          "border": "1px solid rgba(255, 255, 255, 0.1)",
         },
       });
     },
