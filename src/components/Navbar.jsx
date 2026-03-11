@@ -1,4 +1,4 @@
-import { NavLink, Link } from "react-router-dom";
+import { NavLink, Link, useNavigate } from "react-router-dom";
 import { useContext, useState } from "react";
 import AuthContext from "../context/AuthContext";
 
@@ -32,10 +32,14 @@ function Navbar() {
   const { token, user, setToken, setUser } = useContext(AuthContext);
   const [open, setOpen] = useState(false);
 
+  const navigate = useNavigate(); // ✅ added
+
   const logout = () => {
     setToken(null);
     setUser(null);
     setOpen(false);
+
+    navigate("/", { replace: true }); // ✅ redirect to home page
   };
 
   const profileImg = user?.profileImage
@@ -68,7 +72,7 @@ function Navbar() {
           </span>
         </Link>
 
-        {/* ================= DESKTOP NAV (Hidden on Mobile) ================= */}
+        {/* ================= DESKTOP NAV ================= */}
         <div className="hidden md:flex items-center gap-2">
           <NavLink to="/lost-items" className={navLinkClass}>
             Lost Items
@@ -80,7 +84,6 @@ function Navbar() {
 
           <div className="h-6 w-[1px] bg-slate-200 dark:bg-slate-800 mx-2" />
 
-          {/* CTA: Post Item */}
           <NavLink
             to="/create"
             className={({ isActive }) =>
@@ -100,13 +103,11 @@ function Navbar() {
           </NavLink>
         </div>
 
-        {/* ================= RIGHT UTILS (Visible on Mobile) ================= */}
+        {/* ================= RIGHT UTILITIES ================= */}
         <div className="flex items-center gap-2 sm:gap-4">
           
-          {/* Always show the Bell and Theme Toggle to the left of the profile */}
           <div className="flex items-center gap-1 sm:gap-3">
              <ModeToggle />
-             {/* Notification Bell now stays visible on all screen sizes */}
              {token && <NotificationBell user={user} />}
           </div>
 
@@ -126,13 +127,16 @@ function Navbar() {
                   <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Account</p>
                   <p className="text-sm font-bold text-slate-900 dark:text-white truncate">{user?.email}</p>
                 </div>
+
                 <DropdownMenuSeparator className="bg-slate-100 dark:bg-slate-800" />
+
                 <DropdownMenuItem asChild className="rounded-xl focus:bg-slate-100 dark:focus:bg-slate-800 cursor-pointer py-2.5">
                   <Link to="/profile" className="flex items-center gap-3 w-full">
                     <User size={18} />
                     <span>Profile Settings</span>
                   </Link>
                 </DropdownMenuItem>
+
                 <DropdownMenuItem
                   onClick={logout}
                   className="rounded-xl focus:bg-red-50 dark:focus:bg-red-900/20 text-red-500 focus:text-red-600 cursor-pointer py-2.5"
@@ -153,7 +157,7 @@ function Navbar() {
             </Link>
           )}
 
-          {/* ================= MOBILE TOGGLE ================= */}
+          {/* ================= MOBILE MENU ================= */}
           <Sheet open={open} onOpenChange={setOpen}>
             <SheetTrigger className="md:hidden p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white">
               <Menu size={20} />
@@ -165,12 +169,15 @@ function Navbar() {
             >
               <div className="flex flex-col gap-3">
                 <p className="text-xs font-bold text-slate-400 uppercase tracking-widest px-4 mb-2">Menu</p>
+
                 <NavLink to="/lost-items" onClick={closeMenu} className={navLinkClass}>
                   Lost Items
                 </NavLink>
+
                 <NavLink to="/found-items" onClick={closeMenu} className={navLinkClass}>
                   Found Items
                 </NavLink>
+
                 <NavLink
                   to="/create"
                   onClick={closeMenu}
@@ -187,6 +194,7 @@ function Navbar() {
                     <NavLink to="/profile" onClick={closeMenu} className={navLinkClass}>
                       My Profile
                     </NavLink>
+
                     <button
                       onClick={logout}
                       className="flex items-center gap-2 px-5 py-3 rounded-xl text-red-500 font-bold hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors mt-2"
@@ -199,6 +207,7 @@ function Navbar() {
               </div>
             </SheetContent>
           </Sheet>
+
         </div>
       </div>
     </nav>
