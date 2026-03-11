@@ -64,7 +64,7 @@ function Navbar() {
              <LayoutGrid className="text-white" size={22} />
           </div>
           <span className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">
-            Found<span className="text-blue-600">Flow</span>
+            Found<span className="text-blue-600">Lost</span>
           </span>
         </Link>
 
