@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import api from "../api/axios";
 import { toast } from "sonner";
-import { User, Mail, Lock, UserPlus, Loader2, ArrowRight, CheckCircle2, ShieldCheck } from "lucide-react";
+import { User, Mail, Lock, UserPlus, Loader2, ArrowRight, CheckCircle2, ShieldCheck, Eye, EyeOff } from "lucide-react"; // ✅ Added Eye icons
 
 function Register() {
   const navigate = useNavigate();
@@ -10,6 +10,7 @@ function Register() {
   const [form, setForm] = useState({ name: "", email: "", password: "" });
   const [loading, setLoading] = useState(false);
   const [strength, setStrength] = useState(0);
+  const [showPassword, setShowPassword] = useState(false); // ✅ Added state
 
   const handleChange = (e) => {
     const newForm = { ...form, [e.target.name]: e.target.value };
@@ -50,7 +51,6 @@ function Register() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-[#0B0F1A] px-4 relative overflow-hidden">
-      {/* Background Accents */}
       <div className="absolute top-[-5%] right-[-5%] w-80 h-80 bg-blue-600/10 rounded-full blur-3xl" />
       <div className="absolute bottom-[-5%] left-[-5%] w-80 h-80 bg-emerald-600/10 rounded-full blur-3xl" />
 
@@ -70,7 +70,6 @@ function Register() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Full Name */}
             <div className="space-y-2">
               <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Full Name</label>
               <div className="relative group">
@@ -86,7 +85,6 @@ function Register() {
               </div>
             </div>
 
-            {/* Email Address */}
             <div className="space-y-2">
               <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Email Address</label>
               <div className="relative group">
@@ -102,22 +100,28 @@ function Register() {
               </div>
             </div>
 
-            {/* Password */}
             <div className="space-y-2">
               <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Password</label>
               <div className="relative group">
                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
                 <input
-                  type="password"
+                  type={showPassword ? "text" : "password"} // ✅ Dynamic type
                   name="password"
                   placeholder="••••••••"
-                  className="w-full pl-12 pr-4 py-4 bg-slate-100 dark:bg-slate-800/50 border-transparent focus:border-blue-600 focus:bg-white dark:focus:bg-slate-800 border-2 rounded-2xl outline-none transition-all dark:text-white"
+                  className="w-full pl-12 pr-12 py-4 bg-slate-100 dark:bg-slate-800/50 border-transparent focus:border-blue-600 focus:bg-white dark:focus:bg-slate-800 border-2 rounded-2xl outline-none transition-all dark:text-white"
                   onChange={handleChange}
                   required
                 />
+                {/* ✅ Toggle Button */}
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-blue-600 transition-colors focus:outline-none"
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
               </div>
 
-              {/* Enhanced Password Strength Meter */}
               {form.password && (
                 <div className="px-1 pt-2">
                   <div className="flex justify-between items-center mb-1.5">
@@ -158,7 +162,6 @@ function Register() {
           </div>
         </div>
 
-        {/* Minimal Footer Badge */}
         <div className="flex items-center justify-center gap-2 mt-8 opacity-40">
            <ShieldCheck size={14} className="dark:text-white" />
            <span className="text-[10px] uppercase font-black tracking-[0.2em] dark:text-white">Secure Registration</span>

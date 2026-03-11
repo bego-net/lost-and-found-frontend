@@ -26,6 +26,8 @@ import NotFound from "./pages/NotFound";
 import Chat from "./pages/Chat";
 import Conversation from "./pages/Conversation";
 import AdminDashboard from "./pages/AdminDashboard";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 
 /* OWNER MESSAGE SYSTEM */
 import MyItems from "./pages/MyItems";
@@ -52,6 +54,8 @@ function AnimatedRoutes() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password/:token" element={<ResetPassword />} />
 
           {/* ================= ITEMS ================= */}
           <Route path="/create" element={<CreateItem />} />

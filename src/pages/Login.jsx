@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import api from "../api/axios";
 import AuthContext from "../context/AuthContext";
-import { Mail, Lock, ArrowRight, Loader2, ShieldCheck } from "lucide-react";
+import { Mail, Lock, ArrowRight, Loader2, ShieldCheck, Eye, EyeOff } from "lucide-react"; // ✅ Added Eye icons
 
 function Login() {
   const navigate = useNavigate();
@@ -11,6 +11,7 @@ function Login() {
 
   const [form, setForm] = useState({ email: "", password: "" });
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false); // ✅ Added state
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -52,12 +53,10 @@ function Login() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-[#0B0F1A] px-4 relative overflow-hidden">
-      {/* Abstract Background Blobs */}
       <div className="absolute top-[-10%] left-[-10%] w-72 h-72 bg-blue-600/10 rounded-full blur-3xl" />
       <div className="absolute bottom-[-10%] right-[-10%] w-96 h-96 bg-purple-600/10 rounded-full blur-3xl" />
 
       <div className="w-full max-w-md z-10">
-        {/* Logo/Icon Area */}
         <div className="flex justify-center mb-8">
           <div className="p-4 bg-white dark:bg-slate-900 rounded-[2rem] shadow-xl border border-slate-200 dark:border-slate-800">
             <ShieldCheck className="w-10 h-10 text-blue-600" />
@@ -75,7 +74,6 @@ function Login() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Email Input */}
             <div className="space-y-2">
               <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">
                 Email Address
@@ -93,30 +91,36 @@ function Login() {
               </div>
             </div>
 
-            {/* Password Input */}
             <div className="space-y-2">
               <div className="flex justify-between items-center ml-1">
                 <label className="text-xs font-black uppercase tracking-widest text-slate-400">
                   Password
                 </label>
-                <Link to="/forgot-password" size={14} className="text-xs font-bold text-blue-600 hover:underline">
+                <Link to="/forgot-password" text-size={14} className="text-xs font-bold text-blue-600 hover:underline">
                   Forgot?
                 </Link>
               </div>
               <div className="relative group">
                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
                 <input
-                  type="password"
+                  type={showPassword ? "text" : "password"} // ✅ Dynamic type
                   name="password"
                   placeholder="••••••••"
-                  className="w-full pl-12 pr-4 py-4 bg-slate-100 dark:bg-slate-800/50 border-transparent focus:border-blue-600 focus:bg-white dark:focus:bg-slate-800 border-2 rounded-2xl outline-none transition-all dark:text-white"
+                  className="w-full pl-12 pr-12 py-4 bg-slate-100 dark:bg-slate-800/50 border-transparent focus:border-blue-600 focus:bg-white dark:focus:bg-slate-800 border-2 rounded-2xl outline-none transition-all dark:text-white"
                   onChange={handleChange}
                   required
                 />
+                {/* ✅ Toggle Button */}
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-blue-600 transition-colors focus:outline-none"
+                >
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
               </div>
             </div>
 
-            {/* Submit Button */}
             <button
               type="submit"
               disabled={loading}
@@ -132,7 +136,6 @@ function Login() {
             </button>
           </form>
 
-          {/* Footer */}
           <div className="mt-10 text-center">
             <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">
               Don't have an account?{" "}
@@ -146,7 +149,6 @@ function Login() {
           </div>
         </div>
 
-        {/* Bottom Security Badge */}
         <p className="text-center mt-8 text-slate-400 text-[10px] uppercase font-black tracking-[0.2em]">
           Securely encrypted & SSL Protected
         </p>
