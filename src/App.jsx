@@ -28,10 +28,14 @@ import Conversation from "./pages/Conversation";
 import AdminDashboard from "./pages/AdminDashboard";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
+import OAuthSuccess from "./pages/OAuthSuccess";
 
 /* OWNER MESSAGE SYSTEM */
 import MyItems from "./pages/MyItems";
 import ItemMessages from "./pages/ItemMessages";
+
+import Safety from "./pages/Safety";
+import Contact from "./pages/Contact";
 
 function AnimatedRoutes() {
   const location = useLocation();
@@ -56,6 +60,7 @@ function AnimatedRoutes() {
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password/:token" element={<ResetPassword />} />
+          <Route path="/oauth-success" element={<OAuthSuccess />} />
 
           {/* ================= ITEMS ================= */}
           <Route path="/create" element={<CreateItem />} />
@@ -90,6 +95,9 @@ function AnimatedRoutes() {
           {/* ================= PROFILE ================= */}
           <Route path="/profile" element={<Profile />} />
           <Route path="/edit-profile" element={<EditProfile />} />
+
+          <Route path="/safety" element={<Safety />} />
+          <Route path="/contact" element={<Contact />} />
 
           {/* ================= 404 ================= */}
           <Route path="*" element={<NotFound />} />

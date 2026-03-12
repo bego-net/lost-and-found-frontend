@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import api from "../api/axios";
 import AuthContext from "../context/AuthContext";
-import { Mail, Lock, ArrowRight, Loader2, ShieldCheck, Eye, EyeOff } from "lucide-react"; // ✅ Added Eye icons
+import { Mail, Lock, ArrowRight, Loader2, ShieldCheck, Eye, EyeOff } from "lucide-react";
 
 function Login() {
   const navigate = useNavigate();
@@ -11,7 +11,12 @@ function Login() {
 
   const [form, setForm] = useState({ email: "", password: "" });
   const [loading, setLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false); // ✅ Added state
+  const [showPassword, setShowPassword] = useState(false);
+
+  /* GOOGLE LOGIN FUNCTION */
+  const googleLogin = () => {
+    window.location.href = "http://localhost:5000/api/auth/google";
+  };
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -35,6 +40,8 @@ function Login() {
 
       setToken(userData.token);
       setUser(userData);
+
+      localStorage.setItem("token", userData.token);
       localStorage.setItem("user", JSON.stringify(userData));
 
       setTimeout(() => {
@@ -53,6 +60,7 @@ function Login() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-[#0B0F1A] px-4 relative overflow-hidden">
+      {/* Background Decor */}
       <div className="absolute top-[-10%] left-[-10%] w-72 h-72 bg-blue-600/10 rounded-full blur-3xl" />
       <div className="absolute bottom-[-10%] right-[-10%] w-96 h-96 bg-purple-600/10 rounded-full blur-3xl" />
 
@@ -96,21 +104,23 @@ function Login() {
                 <label className="text-xs font-black uppercase tracking-widest text-slate-400">
                   Password
                 </label>
-                <Link to="/forgot-password" text-size={14} className="text-xs font-bold text-blue-600 hover:underline">
+                <Link
+                  to="/forgot-password"
+                  className="text-xs font-bold text-blue-600 hover:underline"
+                >
                   Forgot?
                 </Link>
               </div>
               <div className="relative group">
                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
                 <input
-                  type={showPassword ? "text" : "password"} // ✅ Dynamic type
+                  type={showPassword ? "text" : "password"}
                   name="password"
                   placeholder="••••••••"
                   className="w-full pl-12 pr-12 py-4 bg-slate-100 dark:bg-slate-800/50 border-transparent focus:border-blue-600 focus:bg-white dark:focus:bg-slate-800 border-2 rounded-2xl outline-none transition-all dark:text-white"
                   onChange={handleChange}
                   required
                 />
-                {/* ✅ Toggle Button */}
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
@@ -135,6 +145,36 @@ function Login() {
               )}
             </button>
           </form>
+
+          {/* --- MODERN GOOGLE UI --- */}
+          <div className="relative my-8">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t border-slate-200 dark:border-slate-800"></span>
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-white dark:bg-slate-900 px-4 text-slate-400 font-black tracking-widest">
+                Or continue with
+              </span>
+            </div>
+          </div>
+
+          <button
+            onClick={googleLogin}
+            type="button"
+            className="w-full flex items-center justify-center gap-3 bg-white dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 py-4 rounded-2xl font-bold text-slate-700 dark:text-white hover:bg-slate-50 dark:hover:bg-slate-700 transition-all transform active:scale-[0.98] shadow-sm"
+          >
+            <img 
+              src="https://www.gstatic.com/images/branding/product/1x/gsa_512dp.png" 
+              alt="Google" 
+              className="w-5 h-5 object-contain"
+              onError={(e) => {
+                e.target.onerror = null; 
+                e.target.src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_Logo.png"
+              }}
+            />
+            Continue with Google
+          </button>
+          {/* ----------------------- */}
 
           <div className="mt-10 text-center">
             <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">
