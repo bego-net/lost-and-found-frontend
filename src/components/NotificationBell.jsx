@@ -3,10 +3,8 @@ import { io } from "socket.io-client";
 import axios from "../api/axios";
 import { useNavigate } from "react-router-dom";
 import { Bell, MessageSquare, Package, Sparkles, CheckCircle2, Clock, User as UserIcon } from "lucide-react";
-import { toImageUrl } from "../lib/utils";
 
-const SOCKET_URL = import.meta.env.VITE_API_URL;
-const socket = io(SOCKET_URL, {
+const socket = io(import.meta.env.VITE_API_URL, {
   withCredentials: true,
 });
 
@@ -164,11 +162,7 @@ export default function NotificationBell({ user }) {
                       <div className="relative flex-shrink-0">
                         <div className="w-12 h-12 rounded-2xl overflow-hidden bg-slate-200 dark:bg-slate-700">
                           <img
-                            src={
-                              n.sender?.profileImage
-                                ? toImageUrl(n.sender.profileImage)
-                                : toImageUrl("/uploads/default-profile.png")
-                            }
+                            src={n.sender?.profileImage ? `${import.meta.env.VITE_API_URL}${n.sender.profileImage}` : `${import.meta.env.VITE_API_URL}/uploads/default-profile.png`}
                             alt="avatar"
                             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                           />
