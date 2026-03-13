@@ -15,7 +15,7 @@ function Login() {
 
   /* GOOGLE LOGIN FUNCTION */
   const googleLogin = () => {
-    window.location.href = "http://localhost:5000/api/auth/google";
+    window.location.href = `${import.meta.env.VITE_API_URL}/api/auth/google`;
   };
 
   const handleChange = (e) => {

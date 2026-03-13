@@ -235,7 +235,7 @@ export default function AdvancedSearch() {
                     <div key={it._id} className="group bg-white dark:bg-slate-900 p-4 rounded-[2rem] border border-slate-100 dark:border-slate-800 hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-none transition-all">
                       <div className="flex gap-6 items-center">
                         <img 
-                           src={it.images?.[0] ? `http://localhost:5000${it.images[0]}` : "/default-profile.png"} 
+                           src={it.images?.[0] ? `${import.meta.env.VITE_API_URL}${it.images[0]}` : `${import.meta.env.VITE_API_URL}/uploads/default-image.png`} 
                            alt="" 
                            className="w-32 h-24 object-cover rounded-2xl shadow-inner bg-slate-100 dark:bg-slate-800" 
                         />

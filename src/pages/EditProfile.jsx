@@ -9,7 +9,7 @@ function EditProfile() {
 
   // PREVIEW IMAGE
   const initialPreview = user?.profileImage
-    ? `http://localhost:5000${user.profileImage}`
+    ? `${import.meta.env.VITE_API_URL}${user.profileImage}`
     : "";
 
   const [name, setName] = useState(user?.name || "");

@@ -100,11 +100,11 @@ function AIMatchPopup({ matches, onClose }) {
                   <div className="relative shrink-0">
                     {item.images && item.images.length > 0 ? (
                       <img
-                        src={`http://localhost:5000${item.images[0]}`}
+                        src={`${import.meta.env.VITE_API_URL}${item.images[0]}`}
                         alt={title}
                         className="w-20 h-20 object-cover rounded-2xl shadow-sm"
                         onError={(e) => {
-                          e.target.src = "https://via.placeholder.com/80?text=No+Image";
+                          e.target.src = `${import.meta.env.VITE_API_URL}/uploads/default-image.png`;
                         }}
                       />
                     ) : (

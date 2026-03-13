@@ -4,7 +4,9 @@ import { io } from "socket.io-client";
 import api from "../api/axios";
 import { ArrowLeft, MessageSquare, Search, User, Clock, ChevronRight } from "lucide-react";
 
-const socket = io("http://localhost:5000");
+const socket = io(import.meta.env.VITE_API_URL, {
+  withCredentials: true,
+});
 
 export default function ItemMessages() {
   const { itemId } = useParams();

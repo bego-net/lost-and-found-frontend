@@ -72,7 +72,7 @@ export default function Profile() {
   }
 
   const profileImg = user?.profileImage
-    ? `http://localhost:5000${user.profileImage}`
+    ? `${import.meta.env.VITE_API_URL}${user.profileImage}`
     : "https://cdn-icons-png.flaticon.com/512/847/847969.png";
 
   return (

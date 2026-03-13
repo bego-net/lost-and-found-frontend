@@ -6,7 +6,7 @@ function ItemCard({ item }) {
   const rawImage = item?.images?.[0];
 
   const imageUrl = rawImage
-    ? `http://localhost:5000${rawImage.startsWith("/") ? rawImage : "/" + rawImage}`
+    ? `${import.meta.env.VITE_API_URL}${rawImage.startsWith("/") ? rawImage : "/" + rawImage}`
     : null;
 
   return (

@@ -161,7 +161,7 @@ function AdminDashboard() {
                       <div className="w-12 h-12 rounded-2xl overflow-hidden bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
   {u.profileImage && u.profileImage !== "/uploads/default-profile.png" ? (
     <img
-      src={`http://localhost:5000${u.profileImage}`}
+      src={`${import.meta.env.VITE_API_URL}${u.profileImage}`}
       alt={u.name}
       className="w-full h-full object-cover"
     />
@@ -269,7 +269,7 @@ function AdminDashboard() {
   {selectedUser.profileImage &&
   selectedUser.profileImage !== "/uploads/default-profile.png" ? (
     <img
-      src={`http://localhost:5000${selectedUser.profileImage}`}
+      src={`${import.meta.env.VITE_API_URL}${selectedUser.profileImage}`}
       alt={selectedUser.name}
       className="w-full h-full object-cover"
     />

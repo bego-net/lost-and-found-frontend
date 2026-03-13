@@ -16,7 +16,7 @@ import relativeTime from "dayjs/plugin/relativeTime";
 dayjs.extend(relativeTime); 
 // ---------------------------
 
-const BASE_URL = "http://localhost:5000";
+const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 function EnableZoomOnClick() {
   const map = useMap();
