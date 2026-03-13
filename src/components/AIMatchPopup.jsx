@@ -1,6 +1,7 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { Sparkles, X, MapPin, ChevronRight, BrainCircuit } from "lucide-react";
+import { toImageUrl } from "../lib/utils";
 
 function AIMatchPopup({ matches, onClose }) {
   const navigate = useNavigate();
@@ -100,11 +101,11 @@ function AIMatchPopup({ matches, onClose }) {
                   <div className="relative shrink-0">
                     {item.images && item.images.length > 0 ? (
                       <img
-                        src={`${import.meta.env.VITE_API_URL}${item.images[0]}`}
+                        src={toImageUrl(item.images[0])}
                         alt={title}
                         className="w-20 h-20 object-cover rounded-2xl shadow-sm"
                         onError={(e) => {
-                          e.target.src = `${import.meta.env.VITE_API_URL}/uploads/default-image.png`;
+                          e.target.src = toImageUrl("/uploads/default-image.png");
                         }}
                       />
                     ) : (

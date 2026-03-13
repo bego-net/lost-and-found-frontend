@@ -94,7 +94,6 @@ function CreateItem() {
     const createPromise = api.post("/items", formData, {
       headers: {
         Authorization: `Bearer ${token}`,
-        "Content-Type": "multipart/form-data",
       },
     });
 

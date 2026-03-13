@@ -6,6 +6,7 @@ import { MapContainer, TileLayer, Marker, useMapEvents } from "react-leaflet";
 import { toast } from "sonner";
 import BackButton from "../components/BackButton";
 import "leaflet/dist/leaflet.css";
+import { toImageUrl } from "../lib/utils";
 
 function EditItem() {
   const { id } = useParams();
@@ -129,7 +130,6 @@ function EditItem() {
       await api.put(`/items/${id}`, formData, {
         headers: {
           Authorization: `Bearer ${token}`,
-          "Content-Type": "multipart/form-data",
         },
       });
 
@@ -159,7 +159,7 @@ function EditItem() {
       {existingImages.length > 0 && (
         <div className="relative mb-6 bg-black rounded-xl overflow-hidden">
           <img
-            src={existingImages[sliderIndex]?.url}
+            src={toImageUrl(existingImages[sliderIndex]?.url)}
             alt="Item"
             className="h-64 w-full object-contain bg-black"
           />

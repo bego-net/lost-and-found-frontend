@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import socket from "../lib/socket";
-import axios from "axios";
+import api from "../api/axios";
 import { useParams, useNavigate } from "react-router-dom";
 import { Send, ArrowLeft, User, ShieldCheck, Clock, MoreHorizontal } from "lucide-react";
 
@@ -17,8 +17,8 @@ function Chat() {
   useEffect(() => {
     socket.emit("joinConversation", conversationId);
 
-    axios
-      .get(`/api/messages/${conversationId}`)
+    api
+      .get(`/messages/${conversationId}`)
       .then((res) => {
         setMessages(res.data);
         setLoading(false);

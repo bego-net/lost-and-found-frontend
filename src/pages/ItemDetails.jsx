@@ -8,6 +8,7 @@ import {
   MessageCircle, Edit3, ArrowLeft, Info, Sparkles, 
   ShieldCheck, Share2, Clock 
 } from "lucide-react";
+import { toImageUrl } from "../lib/utils";
 import "leaflet/dist/leaflet.css";
 
 // --- FIXING DAYJS ERROR ---
@@ -16,7 +17,6 @@ import relativeTime from "dayjs/plugin/relativeTime";
 dayjs.extend(relativeTime); 
 // ---------------------------
 
-const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 function EnableZoomOnClick() {
   const map = useMap();
@@ -123,7 +123,7 @@ function ItemDetails() {
             <div className="relative group aspect-[4/3] bg-white dark:bg-slate-900 rounded-[3.5rem] overflow-hidden shadow-2xl border-4 border-white dark:border-slate-800">
               {images.length > 0 ? (
                 <>
-                  <img src={`${BASE_URL}${images[sliderIndex]}`} alt={item.title} className="w-full h-full object-cover" />
+                  <img src={toImageUrl(images[sliderIndex])} alt={item.title} className="w-full h-full object-cover" />
                   {images.length > 1 && (
                     <div className="absolute inset-0 flex items-center justify-between p-6 opacity-0 group-hover:opacity-100 transition-all">
                       <button onClick={() => setSliderIndex((sliderIndex - 1 + images.length) % images.length)} className="p-4 rounded-3xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl shadow-2xl hover:scale-110 text-slate-900 dark:text-white transition-all"><ChevronLeft/></button>
@@ -133,7 +133,7 @@ function ItemDetails() {
                   <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-3 px-4 py-3 bg-black/20 backdrop-blur-lg rounded-3xl">
                     {images.map((img, i) => (
                       <button key={i} onClick={() => setSliderIndex(i)} className={`h-12 w-12 rounded-xl overflow-hidden border-2 transition-all ${i === sliderIndex ? "border-white scale-110" : "border-transparent opacity-50"}`}>
-                        <img src={`${BASE_URL}${img}`} className="w-full h-full object-cover" alt="thumb" />
+                        <img src={toImageUrl(img)} className="w-full h-full object-cover" alt="thumb" />
                       </button>
                     ))}
                   </div>

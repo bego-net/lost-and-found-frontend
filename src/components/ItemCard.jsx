@@ -1,13 +1,12 @@
 import { Link } from "react-router-dom";
 import { MapPin, Tag, Calendar, ArrowRight, ImageOff } from "lucide-react";
 import dayjs from "dayjs";
+import { toImageUrl } from "../lib/utils";
 
 function ItemCard({ item }) {
   const rawImage = item?.images?.[0];
 
-  const imageUrl = rawImage
-    ? `${import.meta.env.VITE_API_URL}${rawImage.startsWith("/") ? rawImage : "/" + rawImage}`
-    : null;
+  const imageUrl = rawImage ? toImageUrl(rawImage) : null;
 
   return (
     <div className="

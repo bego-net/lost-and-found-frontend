@@ -15,6 +15,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Menu, Plus, User, LogOut, LayoutGrid } from "lucide-react";
 import { ModeToggle } from "@/components/ui/mode-toggle";
 import NotificationBell from "./NotificationBell";
+import { toImageUrl } from "../lib/utils";
 
 /* ================= ACTIVE LINK STYLE ================= */
 const navLinkClass = ({ isActive }) =>
@@ -43,7 +44,7 @@ function Navbar() {
   };
 
   const profileImg = user?.profileImage
-    ? `${import.meta.env.VITE_API_URL}${user.profileImage}`
+    ? toImageUrl(user.profileImage)
     : "https://cdn-icons-png.flaticon.com/512/847/847969.png";
 
   const closeMenu = () => setOpen(false);

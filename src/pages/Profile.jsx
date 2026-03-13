@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import AuthContext from "../context/AuthContext";
 import api from "../api/axios";
 import ItemCard from "../components/ItemCard";
+import { toImageUrl } from "../lib/utils";
 import { 
   Settings, 
   MapPin, 
@@ -72,7 +73,7 @@ export default function Profile() {
   }
 
   const profileImg = user?.profileImage
-    ? `${import.meta.env.VITE_API_URL}${user.profileImage}`
+    ? toImageUrl(user.profileImage)
     : "https://cdn-icons-png.flaticon.com/512/847/847969.png";
 
   return (

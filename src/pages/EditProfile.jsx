@@ -3,13 +3,14 @@ import AuthContext from "../context/AuthContext";
 import api from "../api/axios";
 import { toast } from "sonner";
 import BackButton from "../components/BackButton";
+import { toImageUrl } from "../lib/utils";
 
 function EditProfile() {
   const { user, setUser, token } = useContext(AuthContext);
 
   // PREVIEW IMAGE
   const initialPreview = user?.profileImage
-    ? `${import.meta.env.VITE_API_URL}${user.profileImage}`
+    ? toImageUrl(user.profileImage)
     : "";
 
   const [name, setName] = useState(user?.name || "");
@@ -61,7 +62,6 @@ function EditProfile() {
           {
             headers: {
               Authorization: `Bearer ${token}`,
-              "Content-Type": "multipart/form-data",
             },
           }
         );
