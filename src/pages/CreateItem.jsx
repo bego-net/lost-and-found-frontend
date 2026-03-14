@@ -29,12 +29,14 @@ function CreateItem() {
     type: "lost",
     category: "other",
     location: "",
+    dateLostOrFound: "",
     images: [],
   });
 
   const [location, setLocation] = useState({ lat: null, lng: null });
   const [previews, setPreviews] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [submitError, setSubmitError] = useState("");
 
   /* NEW AI STATES */
   const [matches, setMatches] = useState([]);
@@ -66,13 +68,31 @@ function CreateItem() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    if (loading) return;
+    setSubmitError("");
+
     if (!token) {
-      toast.error("Please login to post an item ❌");
+      toast.error("Please login to post an item.");
+      return;
+    }
+
+    const missingFields = [];
+    if (!form.title.trim()) missingFields.push("title");
+    if (!form.description.trim()) missingFields.push("description");
+    if (!form.location.trim()) missingFields.push("location");
+    if (!form.dateLostOrFound) missingFields.push("date");
+    if (!form.type) missingFields.push("type");
+    if (!form.category) missingFields.push("category");
+
+    if (missingFields.length > 0) {
+      const message = "Please fill in: " + missingFields.join(", ");
+      setSubmitError(message);
+      toast.warning(message);
       return;
     }
 
     if (!location.lat || !location.lng) {
-      toast.warning("Please pin the location on the map 📍");
+      toast.warning("Please pin the location on the map.");
       return;
     }
 
@@ -84,11 +104,12 @@ function CreateItem() {
     formData.append("type", form.type);
     formData.append("category", form.category);
     formData.append("location", form.location);
-    formData.append("latitude", location.lat);
-    formData.append("longitude", location.lng);
+    formData.append("latitude", String(location.lat));
+    formData.append("longitude", String(location.lng));
+    formData.append("dateLostOrFound", form.dateLostOrFound);
 
-    form.images.forEach((img) => {
-      formData.append("images", img);
+    form.images.filter(Boolean).forEach((img) => {
+      formData.append("images[]", img);
     });
 
     const createPromise = api.post("/items", formData, {
@@ -100,7 +121,10 @@ function CreateItem() {
     toast.promise(createPromise, {
       loading: "Publishing your listing...",
       success: "Successfully posted!",
-      error: "Could not create listing ❌",
+      error: (err) =>
+        err?.response?.data?.message ||
+        err?.message ||
+        "Could not create listing.",
     });
 
     try {
@@ -112,7 +136,18 @@ function CreateItem() {
         setTimeout(() => navigate("/"), 1500);
       }
     } catch (err) {
-      console.error(err);
+      const message =
+        err?.response?.data?.message ||
+        err?.message ||
+        "Could not create listing.";
+
+      if (err?.response?.status === 500) {
+        console.error("Server error response:", err?.response?.data);
+      } else {
+        console.error(err);
+      }
+
+      setSubmitError(message);
     } finally {
       setLoading(false);
     }
@@ -182,6 +217,17 @@ function CreateItem() {
                   required
                 />
               </div>
+              <div className="md:col-span-2">
+                <label className={labelStyle}><AlertCircle size={16}/> Date Lost or Found</label>
+                <input
+                  type="date"
+                  name="dateLostOrFound"
+                  className={inputStyle}
+                  value={form.dateLostOrFound}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
             </div>
           </div>
 
@@ -242,6 +288,12 @@ function CreateItem() {
           </div>
 
           {/* SUBMIT BUTTON */}
+          {submitError && (
+            <div className="flex items-start gap-2 p-4 rounded-2xl bg-rose-50 text-rose-700 border border-rose-200 text-sm font-semibold">
+              <AlertCircle size={16} className="mt-0.5" />
+              <span>{submitError}</span>
+            </div>
+          )}
           <button
             disabled={loading}
             className="w-full bg-blue-600 hover:bg-blue-700 text-white py-5 rounded-[2rem] text-xl font-black shadow-2xl shadow-blue-500/30 disabled:opacity-60 disabled:hover:translate-y-0 transition-all hover:-translate-y-1 active:scale-95 flex items-center justify-center gap-3"
