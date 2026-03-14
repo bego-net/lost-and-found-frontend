@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import AuthContext from "./AuthContext";
 import api from "../api/axios";
+import { setSocketAuth } from "../lib/socket";
 
 function AuthProvider({ children }) {
   const [token, setToken] = useState(() => localStorage.getItem("token") || null);
@@ -21,6 +22,7 @@ function AuthProvider({ children }) {
   useEffect(() => {
     if (token) localStorage.setItem("token", token);
     else localStorage.removeItem("token");
+    setSocketAuth(token);
   }, [token]);
 
   // Sync user → localStorage

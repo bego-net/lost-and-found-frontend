@@ -4,38 +4,39 @@ import {
   Route,
   useLocation,
 } from "react-router-dom";
+import { lazy, Suspense } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 
 /* Pages */
-import Home from "./pages/Home";
-import Login from "./pages/Login";
-import Register from "./pages/Register";
-import CreateItem from "./pages/CreateItem";
-import ItemDetails from "./pages/ItemDetails";
-import LostItems from "./pages/LostItems";
-import FoundItems from "./pages/FoundItems";
-import EditItem from "./pages/EditItem";
-import Profile from "./pages/Profile";
-import EditProfile from "./pages/EditProfile";
-import SearchResults from "./pages/SearchResults";
-import AdvancedSearch from "./pages/AdvancedSearch";
-import NotFound from "./pages/NotFound";
-import Chat from "./pages/Chat";
-import Conversation from "./pages/Conversation";
-import AdminDashboard from "./pages/AdminDashboard";
-import ForgotPassword from "./pages/ForgotPassword";
-import ResetPassword from "./pages/ResetPassword";
-import OAuthSuccess from "./pages/OAuthSuccess";
+const Home = lazy(() => import("./pages/Home"));
+const Login = lazy(() => import("./pages/Login"));
+const Register = lazy(() => import("./pages/Register"));
+const CreateItem = lazy(() => import("./pages/CreateItem"));
+const ItemDetails = lazy(() => import("./pages/ItemDetails"));
+const LostItems = lazy(() => import("./pages/LostItems"));
+const FoundItems = lazy(() => import("./pages/FoundItems"));
+const EditItem = lazy(() => import("./pages/EditItem"));
+const Profile = lazy(() => import("./pages/Profile"));
+const EditProfile = lazy(() => import("./pages/EditProfile"));
+const SearchResults = lazy(() => import("./pages/SearchResults"));
+const AdvancedSearch = lazy(() => import("./pages/AdvancedSearch"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+const Chat = lazy(() => import("./pages/Chat"));
+const Conversation = lazy(() => import("./pages/Conversation"));
+const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
+const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
+const OAuthSuccess = lazy(() => import("./pages/OAuthSuccess"));
 
 /* OWNER MESSAGE SYSTEM */
-import MyItems from "./pages/MyItems";
-import ItemMessages from "./pages/ItemMessages";
+const MyItems = lazy(() => import("./pages/MyItems"));
+const ItemMessages = lazy(() => import("./pages/ItemMessages"));
 
-import Safety from "./pages/Safety";
-import Contact from "./pages/Contact";
+const Safety = lazy(() => import("./pages/Safety"));
+const Contact = lazy(() => import("./pages/Contact"));
 
 function AnimatedRoutes() {
   const location = useLocation();
@@ -50,6 +51,13 @@ function AnimatedRoutes() {
         transition={{ duration: 0.25 }}
         className="min-h-screen p-4"
       >
+        <Suspense
+          fallback={
+            <div className="min-h-[60vh] flex items-center justify-center">
+              <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+            </div>
+          }
+        >
         <Routes location={location}>
           {/* ================= HOME ================= */}
           <Route path="/" element={<Home />} />
@@ -102,6 +110,7 @@ function AnimatedRoutes() {
           {/* ================= 404 ================= */}
           <Route path="*" element={<NotFound />} />
         </Routes>
+        </Suspense>
       </motion.div>
     </AnimatePresence>
   );

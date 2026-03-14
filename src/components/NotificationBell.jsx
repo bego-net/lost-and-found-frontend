@@ -1,12 +1,8 @@
 import { useEffect, useState, useRef } from "react";
-import { io } from "socket.io-client";
-import axios from "../api/axios";
+import api, { API_BASE_URL } from "../api/axios";
 import { useNavigate } from "react-router-dom";
-import { Bell, MessageSquare, Package, Sparkles, CheckCircle2, Clock, User as UserIcon } from "lucide-react";
-
-const socket = io(import.meta.env.VITE_API_URL, {
-  withCredentials: true,
-});
+import { Bell, MessageSquare, Package, Sparkles, CheckCircle2, Clock } from "lucide-react";
+import socket from "../lib/socket";
 
 export default function NotificationBell({ user }) {
   const [notifications, setNotifications] = useState([]);
@@ -19,7 +15,7 @@ export default function NotificationBell({ user }) {
     if (!user?._id) return;
     const loadNotifications = async () => {
       try {
-        const res = await axios.get("/notifications");
+        const res = await api.get("/notifications");
         setNotifications(res.data || []);
       } catch (err) {
         console.error("Notification load error:", err);
@@ -38,8 +34,26 @@ export default function NotificationBell({ user }) {
         return [notification, ...prev];
       });
     };
+    const handleReceiveMessage = (newMessage) => {
+      if (!newMessage) return;
+      const senderId = newMessage.sender?._id || newMessage.sender;
+      if (senderId === user?._id) return;
+      const synthetic = {
+        _id: `msg-${newMessage._id || Date.now()}`,
+        type: "message",
+        sender: newMessage.sender,
+        item: newMessage.item,
+        createdAt: newMessage.createdAt || new Date().toISOString(),
+        isRead: false,
+      };
+      setNotifications((prev) => [synthetic, ...prev]);
+    };
     socket.on("newNotification", handleNewNotification);
-    return () => socket.off("newNotification", handleNewNotification);
+    socket.on("receiveMessage", handleReceiveMessage);
+    return () => {
+      socket.off("newNotification", handleNewNotification);
+      socket.off("receiveMessage", handleReceiveMessage);
+    };
   }, [user?._id]);
 
   useEffect(() => {
@@ -52,7 +66,7 @@ export default function NotificationBell({ user }) {
 
   const handleClick = async (notification) => {
     try {
-      await axios.put(`/notifications/${notification._id}/read`);
+      await api.put(`/notifications/${notification._id}/read`);
       setNotifications((prev) =>
         prev.map((n) => (n._id === notification._id ? { ...n, isRead: true } : n))
       );
@@ -162,7 +176,7 @@ export default function NotificationBell({ user }) {
                       <div className="relative flex-shrink-0">
                         <div className="w-12 h-12 rounded-2xl overflow-hidden bg-slate-200 dark:bg-slate-700">
                           <img
-                            src={n.sender?.profileImage ? `${import.meta.env.VITE_API_URL}${n.sender.profileImage}` : `${import.meta.env.VITE_API_URL}/uploads/default-profile.png`}
+                            src={n.sender?.profileImage ? `${API_BASE_URL}${n.sender.profileImage}` : `${API_BASE_URL}/uploads/default-profile.png`}
                             alt="avatar"
                             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                           />

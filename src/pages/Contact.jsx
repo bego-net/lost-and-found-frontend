@@ -1,6 +1,6 @@
 import { Mail, MessageCircle, Send } from "lucide-react";
 import { useState } from "react";
-import axios from "axios";
+import api from "../api/axios";
 
 const Contact = () => {
 
@@ -21,7 +21,7 @@ const Contact = () => {
 
     try {
 
-      await axios.post(`${import.meta.env.VITE_API_URL}/api/contact`, {
+      await api.post("/contact", {
         name,
         email,
         message
@@ -33,8 +33,13 @@ const Contact = () => {
       setEmail("");
       setMessage("");
 
-    } catch  {
-      setError("Failed to send message. Please try again.");
+    } catch (err) {
+      const messageText =
+        err?.response?.data?.message ||
+        err?.response?.data?.error ||
+        err?.message ||
+        "Failed to send message. Please try again.";
+      setError(messageText);
     }
 
     setLoading(false);

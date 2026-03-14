@@ -1,6 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { Sparkles, X, MapPin, ChevronRight, BrainCircuit } from "lucide-react";
+import { Sparkles, X, MapPin, ChevronRight, BrainCircuit, Calendar } from "lucide-react";
 import { toImageUrl } from "../lib/utils";
 
 function AIMatchPopup({ matches, onClose }) {
@@ -66,15 +66,17 @@ function AIMatchPopup({ matches, onClose }) {
           {/* Matches List */}
           <div className="space-y-3 max-h-[380px] overflow-y-auto pr-2 custom-scrollbar">
             {matches.map((match, index) => {
-              // DEFENSIVE CHECK: If the match or the inner item is missing, skip this iteration
-              if (!match || !match.item) return null;
+              const item = match?.item || match;
+              if (!item) return null;
 
-              // Fallback values to prevent crashes
-              const item = match.item;
               const itemId = item._id || `fallback-id-${index}`;
               const title = item.title || "Untitled Item";
               const locationLabel = item.location || "Location not specified";
-              const similarity = typeof match.similarity === 'number' ? match.similarity : 0;
+              const rawDate = item.dateLostOrFound || item.date || item.createdAt;
+              const dateLabel = rawDate
+                ? new Date(rawDate).toLocaleDateString()
+                : "Date not specified";
+              const similarity = typeof match?.similarity === "number" ? match.similarity : 0;
 
               const similarityColor = 
                 similarity > 80 ? "text-emerald-500" : 
@@ -125,6 +127,12 @@ function AIMatchPopup({ matches, onClose }) {
                       <MapPin size={12} />
                       <span className="text-xs font-medium truncate">
                         {locationLabel}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1 text-slate-500 dark:text-slate-400 mt-1">
+                      <Calendar size={12} />
+                      <span className="text-xs font-medium truncate">
+                        {dateLabel}
                       </span>
                     </div>
 

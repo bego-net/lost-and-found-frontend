@@ -76,8 +76,9 @@ function AdminDashboard() {
 
   const sendReply = async () => {
     if (!replyText) return toast.error("Content required");
+    if (!selectedMessage?._id) return toast.error("Message not selected");
     try {
-      await api.post("/admin/reply", { email: selectedMessage.email, reply: replyText });
+      await api.post("/admin/reply", { messageId: selectedMessage._id, reply: replyText });
       toast.success("Reply transmitted");
       setReplyText("");
       setSelectedMessage(null);

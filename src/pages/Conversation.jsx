@@ -1,12 +1,8 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
-import { io } from "socket.io-client";
 import api from "../api/axios";
 import { ArrowLeft, Send, MoreVertical, ShieldCheck, Clock, User } from "lucide-react";
-
-const socket = io(import.meta.env.VITE_API_URL, {
-  withCredentials: true,
-});
+import socket from "../lib/socket";
 
 function Conversation() {
   const { itemId, userId } = useParams();
