@@ -1,9 +1,8 @@
 import { useContext, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import AuthContext from "../context/AuthContext";
-import api from "../api/axios";
+import api, { API_BASE_URL } from "../api/axios";
 import ItemCard from "../components/ItemCard";
-import { toImageUrl } from "../lib/utils";
 import { 
   Settings, 
   MapPin, 
@@ -14,6 +13,7 @@ import {
   Search,
   CheckCircle2
 } from "lucide-react";
+import { toast } from "sonner";
 
 // ✅ SKELETON IMPORT
 import ProfileSkeleton from "../components/skeletons/ProfileSkeleton";
@@ -35,7 +35,13 @@ export default function Profile() {
         setUser(res.data.user);
         setItems(res.data.items || []);
       } catch (err) {
+        const message =
+          err?.response?.data?.message ||
+          err?.response?.data?.error ||
+          err?.message ||
+          "Failed to fetch profile data";
         console.error("Failed to fetch profile data:", err);
+        toast.error(message);
       } finally {
         setLoading(false);
       }
@@ -73,7 +79,9 @@ export default function Profile() {
   }
 
   const profileImg = user?.profileImage
-    ? toImageUrl(user.profileImage)
+    ? user.profileImage.startsWith("http")
+      ? user.profileImage
+      : `${API_BASE_URL}${user.profileImage}`
     : "https://cdn-icons-png.flaticon.com/512/847/847969.png";
 
   return (

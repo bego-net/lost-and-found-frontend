@@ -1,11 +1,25 @@
-import { createContext } from "react";
+import { createContext, useState, useEffect } from "react";
 
-const AuthContext = createContext({
-  token: null,
-  setToken: () => {},
-  user: null,
-  setUser: () => {},
-  loading: false,
-});
+const AuthContext = createContext();
+
+export function AuthProvider({ children }) {
+  const [token, setToken] = useState(
+    localStorage.getItem("token") || null
+  );
+
+  useEffect(() => {
+    if (token) {
+      localStorage.setItem("token", token);
+    } else {
+      localStorage.removeItem("token");
+    }
+  }, [token]);
+
+  return (
+    <AuthContext.Provider value={{ token, setToken }}>
+      {children}
+    </AuthContext.Provider>
+  );
+}
 
 export default AuthContext;

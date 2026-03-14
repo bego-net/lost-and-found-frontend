@@ -37,7 +37,7 @@ export default function MapPicker({ location, setLocation }) {
 
         <LocationMarker setLocation={setLocation} />
 
-        {location.lat && location.lng && (
+        {location.lat != null && location.lng != null && (
           <Marker
             position={[location.lat, location.lng]}
             icon={markerIcon}
