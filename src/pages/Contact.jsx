@@ -15,34 +15,43 @@ const Contact = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    if (loading) return;
+
     setLoading(true);
     setSuccess("");
     setError("");
 
     try {
 
-      await api.post("/contact", {
+      const res = await api.post("/contact", {
         name,
         email,
         message
       });
 
-      setSuccess("Message sent successfully! Our support team will contact you soon.");
+      if (res.data) {
+        setSuccess("Message sent successfully! Our support team will contact you soon.");
+      }
 
       setName("");
       setEmail("");
       setMessage("");
 
     } catch (err) {
+
       const messageText =
         err?.response?.data?.message ||
         err?.response?.data?.error ||
         err?.message ||
         "Failed to send message. Please try again.";
-      setError(messageText);
-    }
 
-    setLoading(false);
+      setError(messageText);
+
+    } finally {
+
+      setLoading(false);
+
+    }
   };
 
   return (
