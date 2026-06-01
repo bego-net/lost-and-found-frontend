@@ -24,6 +24,14 @@ export default function NotificationBell({ user }) {
       }
     };
     loadNotifications();
+
+    const handleSync = () => {
+      loadNotifications();
+    };
+    window.addEventListener("notificationsUpdated", handleSync);
+    return () => {
+      window.removeEventListener("notificationsUpdated", handleSync);
+    };
   }, [user?._id]);
 
   useEffect(() => {
@@ -72,6 +80,7 @@ export default function NotificationBell({ user }) {
       setNotifications((prev) =>
         prev.map((n) => (n._id === notification._id ? { ...n, isRead: true } : n))
       );
+      window.dispatchEvent(new Event("notificationsUpdated"));
       const itemId = notification.item?._id || notification.item;
       if (itemId) navigate(`/item/${itemId}`);
       setOpen(false);

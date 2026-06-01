@@ -35,6 +35,8 @@ const OAuthSuccess = lazy(() => import("./pages/OAuthSuccess"));
 const MyItems = lazy(() => import("./pages/MyItems"));
 const ItemMessages = lazy(() => import("./pages/ItemMessages"));
 
+const Notifications = lazy(() => import("./pages/Notifications"));
+
 const Safety = lazy(() => import("./pages/Safety"));
 const Contact = lazy(() => import("./pages/Contact"));
 
@@ -103,6 +105,7 @@ function AnimatedRoutes() {
           {/* ================= PROFILE ================= */}
           <Route path="/profile" element={<Profile />} />
           <Route path="/edit-profile" element={<EditProfile />} />
+          <Route path="/notifications" element={<Notifications />} />
 
           <Route path="/safety" element={<Safety />} />
           <Route path="/contact" element={<Contact />} />
