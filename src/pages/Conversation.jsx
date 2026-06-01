@@ -14,6 +14,8 @@ function Conversation() {
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(true);
   const [otherUserName, setOtherUserName] = useState("");
+  const [otherUser, setOtherUser] = useState(null);
+  const [onlineUsers, setOnlineUsers] = useState([]);
 
   const messagesEndRef = useRef(null);
 
@@ -22,17 +24,22 @@ function Conversation() {
       const { data } = await api.get(`/messages/conversation/${itemId}/${userId}`);
       setMessages(data.messages || []);
       setConversationId(data.conversationId);
+      setOtherUser(data.otherUser);
 
-      if (data.messages && data.messages.length > 0) {
+      if (data.otherUser) {
+        setOtherUserName(data.otherUser.name);
+      } else if (data.messages && data.messages.length > 0) {
         const firstMsg = data.messages[0];
-        const otherUser = firstMsg.sender._id === currentUser._id ? firstMsg.receiver : firstMsg.sender;
-        setOtherUserName(otherUser?.name || "User");
+        const otherUserObj = firstMsg.sender._id === currentUser._id ? firstMsg.receiver : firstMsg.sender;
+        setOtherUserName(otherUserObj?.name || "User");
+        setOtherUser(otherUserObj);
       } else {
         // Fallback: Fetch user details dynamically if no messages exist yet
         api.get(`/auth/profile/${userId}`)
           .then((res) => {
             if (res.data?.user) {
               setOtherUserName(res.data.user.name);
+              setOtherUser(res.data.user);
             }
           })
           .catch(() => setOtherUserName("User"));
@@ -40,6 +47,10 @@ function Conversation() {
 
       await api.put(`/messages/mark-read/${itemId}/${userId}`);
       await api.get("/messages/unread/count");
+
+      if (data.conversationId) {
+        socket.emit("messagesSeen", { conversationId: data.conversationId, userId: currentUser._id });
+      }
     } catch (err) {
       console.error(err);
     } finally {
@@ -55,6 +66,12 @@ function Conversation() {
     if (!currentUser?._id || !conversationId) return;
 
     socket.emit("joinConversation", conversationId);
+    socket.emit("userOnline", currentUser._id);
+
+    // Sync online users list
+    socket.on("updateOnlineUsers", (users) => {
+      setOnlineUsers(users);
+    });
 
     const handleMessage = async (newMessage) => {
       if (newMessage.conversation !== conversationId) return;
@@ -65,13 +82,29 @@ function Conversation() {
       if (isSenderOther) {
         await api.put(`/messages/mark-read/${itemId}/${userId}`);
         await api.get("/messages/unread/count");
+        socket.emit("messagesSeen", { conversationId, userId: currentUser._id });
+      }
+    };
+
+    const handleMessagesSeen = ({ conversationId: seenConvoId }) => {
+      if (seenConvoId === conversationId) {
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.sender === currentUser._id || msg.sender?._id === currentUser._id
+              ? { ...msg, read: true, seenAt: new Date() }
+              : msg
+          )
+        );
       }
     };
 
     socket.on("receiveMessage", handleMessage);
+    socket.on("messagesSeen", handleMessagesSeen);
 
     return () => {
       socket.off("receiveMessage", handleMessage);
+      socket.off("messagesSeen", handleMessagesSeen);
+      socket.off("updateOnlineUsers");
     };
   }, [conversationId, itemId, userId, currentUser?._id]);
 
@@ -92,26 +125,57 @@ function Conversation() {
     setText("");
   };
 
+  const isOnline = onlineUsers.includes(userId);
+
+  const getPresenceText = () => {
+    if (isOnline) return "Active now";
+    if (!otherUser?.lastSeen) return "Offline";
+
+    const date = new Date(otherUser.lastSeen);
+    const diffMs = Date.now() - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+
+    if (diffMins < 1) return "Last seen just now";
+    if (diffMins < 60) return `Last seen ${diffMins}m ago`;
+    if (diffHours < 24) return `Last seen ${diffHours}h ago`;
+    return `Last seen on ${date.toLocaleDateString()}`;
+  };
+
   return (
     <div className="max-w-5xl mx-auto h-[calc(100vh-120px)] flex flex-col bg-white dark:bg-[#0B0F1A] sm:rounded-[2.5rem] shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden my-4">
       
-      {/* 1. CHAT HEADER */}
+      {/* 1. Telegram-Style Chat Header */}
       <div className="px-6 py-4 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b dark:border-slate-800 flex justify-between items-center z-10">
         <div className="flex items-center gap-4">
           <Link to={`/my-items/${itemId}/messages`} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors text-slate-500">
             <ArrowLeft size={20} />
           </Link>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-500/20 flex items-center justify-center text-blue-600">
-              <User size={20} />
+            <div className="relative">
+              {otherUser?.profileImage && otherUser.profileImage !== "/uploads/default-profile.png" ? (
+                <img
+                  src={toImageUrl(otherUser.profileImage)}
+                  alt={otherUserName}
+                  className="w-10 h-10 rounded-full object-cover border border-slate-100 dark:border-slate-800"
+                />
+              ) : (
+                <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-500/20 flex items-center justify-center text-blue-600 font-black text-sm">
+                  {otherUserName?.charAt(0).toUpperCase() || "?"}
+                </div>
+              )}
+              {isOnline && (
+                <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 border-2 border-white dark:border-[#0B0F1A] rounded-full" />
+              )}
             </div>
             <div>
-              <h2 className="font-black text-slate-900 dark:text-white leading-none mb-1">
+              <h2 className="font-black text-slate-900 dark:text-white leading-none mb-1 text-base">
                 {otherUserName || "User"}
               </h2>
               <div className="flex items-center gap-1.5">
-                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="text-[10px] uppercase font-bold tracking-widest text-slate-400">Active Now</span>
+                <span className={`text-[10px] font-bold tracking-wide ${isOnline ? "text-emerald-500" : "text-slate-400"}`}>
+                  {getPresenceText()}
+                </span>
               </div>
             </div>
           </div>
@@ -175,6 +239,11 @@ function Conversation() {
                       <Clock size={10} />
                       {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </span>
+                    {isMe && (
+                      <span className={`text-[11px] font-black leading-none ${msg.read ? "text-blue-500 dark:text-blue-400" : "text-slate-400"}`}>
+                        {msg.read ? "✓✓" : "✓"}
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
