@@ -152,32 +152,34 @@ function Conversation() {
             <ArrowLeft size={20} />
           </Link>
           <div className="flex items-center gap-3">
-            <div className="relative">
-              {otherUser?.profileImage && otherUser.profileImage !== "/uploads/default-profile.png" ? (
-                <img
-                  src={toImageUrl(otherUser.profileImage)}
-                  alt={otherUserName}
-                  className="w-10 h-10 rounded-full object-cover border border-slate-100 dark:border-slate-800"
-                />
-              ) : (
-                <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-500/20 flex items-center justify-center text-blue-600 font-black text-sm">
-                  {otherUserName?.charAt(0).toUpperCase() || "?"}
-                </div>
-              )}
-              {isOnline && (
-                <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 border-2 border-white dark:border-[#0B0F1A] rounded-full" />
-              )}
-            </div>
-            <div>
-              <h2 className="font-black text-slate-900 dark:text-white leading-none mb-1 text-base">
-                {otherUserName || "User"}
-              </h2>
-              <div className="flex items-center gap-1.5">
-                <span className={`text-[10px] font-bold tracking-wide ${isOnline ? "text-emerald-500" : "text-slate-400"}`}>
-                  {getPresenceText()}
-                </span>
+            <Link to={`/profile?userId=${userId}`} className="flex items-center gap-3 hover:opacity-85 transition-opacity">
+              <div className="relative">
+                {otherUser?.profileImage && otherUser.profileImage !== "/uploads/default-profile.png" ? (
+                  <img
+                    src={toImageUrl(otherUser.profileImage)}
+                    alt={otherUserName}
+                    className="w-10 h-10 rounded-full object-cover border border-slate-100 dark:border-slate-800"
+                  />
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-500/20 flex items-center justify-center text-blue-600 font-black text-sm">
+                    {otherUserName?.charAt(0).toUpperCase() || "?"}
+                  </div>
+                )}
+                {isOnline && (
+                  <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 border-2 border-white dark:border-[#0B0F1A] rounded-full" />
+                )}
               </div>
-            </div>
+              <div>
+                <h2 className="font-black text-slate-900 dark:text-white leading-none mb-1 text-base">
+                  {otherUserName || "User"}
+                </h2>
+                <div className="flex items-center gap-1.5">
+                  <span className={`text-[10px] font-bold tracking-wide ${isOnline ? "text-emerald-500" : "text-slate-400"}`}>
+                    {getPresenceText()}
+                  </span>
+                </div>
+              </div>
+            </Link>
           </div>
         </div>
         <button className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-white">

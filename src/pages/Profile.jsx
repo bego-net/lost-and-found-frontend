@@ -1,7 +1,7 @@
 import { useContext, useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import AuthContext from "../context/AuthContext";
-import api, { API_BASE_URL } from "../api/axios";
+import api from "../api/axios";
 import ItemCard from "../components/ItemCard";
 import { 
   Settings, 
@@ -15,12 +15,11 @@ import {
   ChevronLeft
 } from "lucide-react";
 import { toast } from "sonner";
-
-// ✅ SKELETON IMPORT
+import { toImageUrl } from "../lib/utils";
 import ProfileSkeleton from "../components/skeletons/ProfileSkeleton";
 
 export default function Profile() {
-  const { token, user, setUser } = useContext(AuthContext);
+  const { token, setUser } = useContext(AuthContext);
   const [searchParams] = useSearchParams();
   const userId = searchParams.get("userId");
   const [displayedUser, setDisplayedUser] = useState(null);
@@ -91,11 +90,8 @@ export default function Profile() {
     );
   }
 
-  const profileImg = displayedUser?.profileImage
-    ? displayedUser.profileImage.startsWith("http")
-      ? displayedUser.profileImage
-      : `${API_BASE_URL}${displayedUser.profileImage}`
-    : "https://cdn-icons-png.flaticon.com/512/847/847969.png";
+  const profileImg = displayedUser?.profileImage;
+  const hasProfileImage = profileImg && profileImg !== "/uploads/default-profile.png";
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 py-10 dark:bg-[#0B0F1A]">
@@ -111,16 +107,21 @@ export default function Profile() {
       
       {/* 1. MODERN HEADER / HERO SECTION */}
       <div className="relative mb-12">
-        {/* Background Decorative Element */}
         <div className="absolute inset-0 bg-gradient-to-r from-blue-600/10 to-purple-600/10 dark:from-blue-500/5 dark:to-purple-500/5 h-48 rounded-[3rem] -z-10" />
         
         <div className="pt-8 px-4 sm:px-10 flex flex-col md:flex-row items-center md:items-end gap-6">
           <div className="relative group">
-            <img
-              src={profileImg}
-              alt="Profile"
-              className="w-40 h-40 rounded-3xl object-cover border-8 border-white dark:border-slate-900 shadow-2xl transition-transform duration-300 group-hover:scale-[1.02]"
-            />
+            {hasProfileImage ? (
+              <img
+                src={toImageUrl(profileImg)}
+                alt={displayedUser?.name || "Profile"}
+                className="w-40 h-40 rounded-3xl object-cover border-8 border-white dark:border-slate-900 shadow-2xl transition-transform duration-300 group-hover:scale-[1.02]"
+              />
+            ) : (
+              <div className="w-40 h-40 rounded-3xl bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 font-black text-5xl flex items-center justify-center border-8 border-white dark:border-slate-900 shadow-2xl transition-transform duration-300 group-hover:scale-[1.02]">
+                {displayedUser?.name?.charAt(0).toUpperCase() || "?"}
+              </div>
+            )}
             <div className="absolute -bottom-2 -right-2 bg-emerald-500 border-4 border-white dark:border-slate-900 w-8 h-8 rounded-full" title="Active Account" />
           </div>
 
@@ -134,19 +135,27 @@ export default function Profile() {
                   to="/edit-profile"
                   className="inline-flex items-center justify-center gap-2 px-4 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full text-sm font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all shadow-sm"
                 >
-                  <Settings size={25} /> Edit Profile
+                  <Settings size={16} /> Edit Profile
                 </Link>
               )}
             </div>
             
             <div className="flex flex-wrap justify-center md:justify-start gap-4 text-slate-500 dark:text-slate-400 font-medium text-sm">
-              <span className="flex items-center gap-1.5">
-                <Mail size={16} className="text-blue-500" /> {displayedUser?.email}
-              </span>
+              {!userId && displayedUser?.email && (
+                <span className="flex items-center gap-1.5">
+                  <Mail size={16} className="text-blue-500" /> {displayedUser.email}
+                </span>
+              )}
               <span className="flex items-center gap-1.5">
                 <Calendar size={16} className="text-purple-500" /> Joined {new Date(displayedUser?.createdAt || Date.now()).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
               </span>
             </div>
+
+            {displayedUser?.bio && (
+              <p className="mt-4 text-slate-600 dark:text-slate-300 font-medium text-sm max-w-xl italic leading-relaxed text-center md:text-left">
+                "{displayedUser.bio}"
+              </p>
+            )}
           </div>
         </div>
       </div>
