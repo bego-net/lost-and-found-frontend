@@ -77,14 +77,39 @@ function ItemCard({ item }) {
           {item.description}
         </p>
 
-        {/* Location Info */}
-        <div className="flex items-center gap-2 mt-4 text-slate-600 dark:text-slate-300">
-          <div className="p-2 bg-slate-100 dark:bg-slate-800 rounded-lg">
-            <MapPin size={14} className="text-rose-500" />
+        {/* Address and Poster Row */}
+        <div className="flex items-center justify-between gap-3 mt-4 pt-3 border-t border-slate-100 dark:border-slate-800/60 min-w-0">
+          {/* Location Info */}
+          <div className="flex items-center gap-1.5 min-w-0">
+            <MapPin size={14} className="text-rose-500 flex-shrink-0" />
+            <span className="text-xs font-bold text-slate-600 dark:text-slate-300 truncate">
+              {item.location || "Unknown Location"}
+            </span>
           </div>
-          <span className="text-xs font-bold truncate">
-            {item.location || "Unknown Location"}
-          </span>
+
+          {/* Poster Info — only when user is a populated object */}
+          {typeof item.user === "object" && item.user?._id && (
+            <Link
+              to={`/profile?userId=${item.user._id}`}
+              className="flex items-center gap-1.5 flex-shrink-0 max-w-[50%] hover:opacity-85 transition-opacity min-w-0"
+            >
+              {item.user.profileImage &&
+               item.user.profileImage !== "/uploads/default-profile.png" ? (
+                <img
+                  src={toImageUrl(item.user.profileImage)}
+                  alt={item.user.name}
+                  className="w-5 h-5 rounded-full object-cover border border-slate-100 dark:border-slate-800 flex-shrink-0"
+                />
+              ) : (
+                <div className="w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-bold text-[9px] flex items-center justify-center border border-slate-100 dark:border-slate-800 flex-shrink-0">
+                  {item.user.name?.charAt(0).toUpperCase() || "?"}
+                </div>
+              )}
+              <span className="text-[11px] font-black text-slate-700 dark:text-slate-200 truncate">
+                {item.user.name || "Unknown"}
+              </span>
+            </Link>
+          )}
         </div>
 
         {/* Action Button */}
@@ -92,7 +117,7 @@ function ItemCard({ item }) {
           to={`/item/${item._id}`}
           state={{ from: item.type }}
           className="
-            mt-6 w-full flex items-center justify-center gap-2 
+            mt-4 w-full flex items-center justify-center gap-2 
             py-3 rounded-2xl
             bg-slate-900 dark:bg-white 
             text-white dark:text-slate-900 

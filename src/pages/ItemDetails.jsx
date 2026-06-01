@@ -189,25 +189,53 @@ function ItemDetails() {
               </div>
             </div>
 
-            {/* ACTIONS */}
-            <div className="pt-4">
-              {user && user._id !== ownerId ? (
-                <div className="space-y-4">
-                  <Link to={`/conversation/${item._id}/${ownerId}`} className="w-full flex items-center justify-center gap-3 bg-blue-600 hover:bg-blue-700 text-white py-6 rounded-[2.5rem] font-black text-xl shadow-2xl transition-all hover:-translate-y-1">
-                    <MessageCircle size={24} /> Message Finder
-                  </Link>
-                  <p className="text-center text-slate-400 text-[10px] font-black uppercase tracking-widest"><ShieldCheck className="inline mr-1 text-emerald-500" size={14}/> Secure Chat Protected</p>
+            {/* Actions & Poster Details Unified Card */}
+            <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-8 shadow-xl border border-slate-100 dark:border-slate-800 space-y-6">
+              {/* Poster Info (Visually Grouped) */}
+              {typeof item.user === "object" && item.user?._id && (
+                <div className="flex items-center gap-3.5 pb-4 border-b border-slate-100 dark:border-slate-800/60">
+                  <div className="relative flex-shrink-0">
+                    {item.user.profileImage &&
+                     item.user.profileImage !== "/uploads/default-profile.png" ? (
+                      <img
+                        src={toImageUrl(item.user.profileImage)}
+                        alt={item.user.name}
+                        className="w-12 h-12 rounded-xl object-cover border border-slate-100 dark:border-slate-800"
+                      />
+                    ) : (
+                      <div className="w-12 h-12 rounded-xl bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-black text-base flex items-center justify-center border border-slate-100 dark:border-slate-800">
+                        {item.user.name?.charAt(0).toUpperCase() || "?"}
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <span className="text-base font-black text-slate-900 dark:text-white block truncate leading-tight">
+                      {item.user.name || "Unknown User"}
+                    </span>
+                  </div>
                 </div>
-              ) : user?._id === ownerId ? (
-                <div className="grid grid-cols-2 gap-4">
-                  <Link to={`/item/edit/${item._id}`} className="flex items-center justify-center gap-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 py-5 rounded-[2rem] font-black hover:opacity-90">Edit</Link>
-                  <Link to={`/my-items/${item._id}/messages`} className="relative flex items-center justify-center gap-2 bg-white dark:bg-slate-800 text-slate-900 dark:text-white border-2 py-5 rounded-[2rem] font-black hover:bg-slate-50 transition-all">
-                    Inquiries {unreadCount > 0 && <span className="absolute -top-2 -right-2 bg-rose-500 text-white text-[10px] w-7 h-7 flex items-center justify-center rounded-full ring-4 ring-white dark:ring-slate-900">{unreadCount}</span>}
-                  </Link>
-                </div>
-              ) : (
-                <Link to="/login" className="w-full flex items-center justify-center bg-slate-900 dark:bg-blue-600 text-white py-6 rounded-[2.5rem] font-black text-xl">Login to Contact</Link>
               )}
+
+              {/* Action Buttons */}
+              <div>
+                {user && user._id !== ownerId ? (
+                  <div className="space-y-4">
+                    <Link to={`/conversation/${item._id}/${ownerId}`} className="w-full flex items-center justify-center gap-3 bg-blue-600 hover:bg-blue-700 text-white py-5 rounded-[2rem] font-black text-lg shadow-2xl transition-all hover:-translate-y-1">
+                      <MessageCircle size={22} /> Message Finder
+                    </Link>
+                    <p className="text-center text-slate-400 text-[10px] font-black uppercase tracking-widest"><ShieldCheck className="inline mr-1 text-emerald-500" size={14}/> Secure Chat Protected</p>
+                  </div>
+                ) : user?._id === ownerId ? (
+                  <div className="grid grid-cols-2 gap-4">
+                    <Link to={`/item/edit/${item._id}`} className="flex items-center justify-center gap-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 py-4 rounded-[1.5rem] font-black hover:opacity-90">Edit</Link>
+                    <Link to={`/my-items/${item._id}/messages`} className="relative flex items-center justify-center gap-2 bg-white dark:bg-slate-800 text-slate-900 dark:text-white border-2 py-4 rounded-[1.5rem] font-black hover:bg-slate-50 transition-all">
+                      Inquiries {unreadCount > 0 && <span className="absolute -top-2 -right-2 bg-rose-500 text-white text-[10px] w-7 h-7 flex items-center justify-center rounded-full ring-4 ring-white dark:ring-slate-900">{unreadCount}</span>}
+                    </Link>
+                  </div>
+                ) : (
+                  <Link to="/login" className="w-full flex items-center justify-center bg-slate-900 dark:bg-blue-600 text-white py-5 rounded-[2rem] font-black text-lg">Login to Contact</Link>
+                )}
+              </div>
             </div>
           </div>
         </div>

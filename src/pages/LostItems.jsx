@@ -1,10 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useContext } from "react";
 import api from "../api/axios";
+import AuthContext from "../context/AuthContext";
 import ItemCard from "../components/ItemCard";
 import { Search, MapPin, Filter, Package, X, Calendar, Tag, ArrowUpDown, Clock } from "lucide-react";
 import SkeletonCard from "../components/skeletons/SkeletonCard";
 
 function LostItems() {
+  const { user } = useContext(AuthContext);
   const [items, setItems] = useState([]);
   const [filtered, setFiltered] = useState([]);
   const [search, setSearch] = useState("");
@@ -57,15 +59,21 @@ function LostItems() {
       result = result.filter(item => item.category === filters.category);
     }
 
-    // 4. Sort by Post Time (Newest/Oldest)
+    // 4. Sort: Other users' posts first, then my own posts at the bottom, then by time
     result.sort((a, b) => {
+      const aIsMe = user && (a.user?._id === user._id || a.user === user._id);
+      const bIsMe = user && (b.user?._id === user._id || b.user === user._id);
+
+      if (aIsMe && !bIsMe) return 1;
+      if (!aIsMe && bIsMe) return -1;
+
       const dateA = new Date(a.createdAt);
       const dateB = new Date(b.createdAt);
       return filters.sortOrder === "newest" ? dateB - dateA : dateA - dateB;
     });
 
     setFiltered(result);
-  }, [search, items, filters]);
+  }, [search, items, filters, user]);
 
   return (
     <div className="min-h-screen bg-[#FDFDFF] dark:bg-[#0B0F1A] transition-colors duration-500">

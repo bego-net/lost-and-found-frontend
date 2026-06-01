@@ -1,5 +1,5 @@
 import { useContext, useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import AuthContext from "../context/AuthContext";
 import api, { API_BASE_URL } from "../api/axios";
 import ItemCard from "../components/ItemCard";
@@ -11,7 +11,8 @@ import {
   PlusCircle, 
   Package, 
   Search,
-  CheckCircle2
+  CheckCircle2,
+  ChevronLeft
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -20,6 +21,9 @@ import ProfileSkeleton from "../components/skeletons/ProfileSkeleton";
 
 export default function Profile() {
   const { token, user, setUser } = useContext(AuthContext);
+  const [searchParams] = useSearchParams();
+  const userId = searchParams.get("userId");
+  const [displayedUser, setDisplayedUser] = useState(null);
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
@@ -27,12 +31,21 @@ export default function Profile() {
   // Fetch user & items
   useEffect(() => {
     async function load() {
-      if (!token) return;
+      if (!token && !userId) {
+        setLoading(false);
+        return;
+      }
       try {
-        const res = await api.get("/auth/me", {
+        const endpoint = userId ? `/auth/profile/${userId}` : "/auth/me";
+        const res = await api.get(endpoint, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        setUser(res.data.user);
+        if (userId) {
+          setDisplayedUser(res.data.user);
+        } else {
+          setUser(res.data.user);
+          setDisplayedUser(res.data.user);
+        }
         setItems(res.data.items || []);
       } catch (err) {
         const message =
@@ -48,9 +61,9 @@ export default function Profile() {
     }
 
     load();
-  }, [token, setUser]);
+  }, [token, setUser, userId]);
 
-  if (!token) {
+  if (!token && !userId) {
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center text-center px-6">
         <div className="bg-slate-100 dark:bg-slate-800 p-6 rounded-full mb-4">
@@ -78,14 +91,23 @@ export default function Profile() {
     );
   }
 
-  const profileImg = user?.profileImage
-    ? user.profileImage.startsWith("http")
-      ? user.profileImage
-      : `${API_BASE_URL}${user.profileImage}`
+  const profileImg = displayedUser?.profileImage
+    ? displayedUser.profileImage.startsWith("http")
+      ? displayedUser.profileImage
+      : `${API_BASE_URL}${displayedUser.profileImage}`
     : "https://cdn-icons-png.flaticon.com/512/847/847969.png";
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 py-10 dark:bg-[#0B0F1A]">
+      {userId && (
+        <button 
+          onClick={() => navigate(-1)}
+          className="group flex items-center gap-3 px-5 py-2.5 bg-white dark:bg-slate-900 shadow-sm border border-slate-200 dark:border-slate-800 rounded-2xl text-slate-600 dark:text-slate-400 hover:text-blue-600 transition-all font-bold mb-6"
+        >
+          <ChevronLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
+          Back
+        </button>
+      )}
       
       {/* 1. MODERN HEADER / HERO SECTION */}
       <div className="relative mb-12">
@@ -105,22 +127,24 @@ export default function Profile() {
           <div className="flex-1 text-center md:text-left pb-4">
             <div className="flex flex-col md:flex-row md:items-center gap-3 mb-2">
               <h1 className="text-4xl font-black text-slate-900 dark:text-white tracking-tight">
-                {user?.name}
+                {displayedUser?.name}
               </h1>
-              <Link
-                to="/edit-profile"
-                className="inline-flex items-center justify-center gap-2 px-4 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full text-sm font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all shadow-sm"
-              >
-                <Settings size={25} /> Edit Profile
-              </Link>
+              {!userId && (
+                <Link
+                  to="/edit-profile"
+                  className="inline-flex items-center justify-center gap-2 px-4 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full text-sm font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all shadow-sm"
+                >
+                  <Settings size={25} /> Edit Profile
+                </Link>
+              )}
             </div>
             
             <div className="flex flex-wrap justify-center md:justify-start gap-4 text-slate-500 dark:text-slate-400 font-medium text-sm">
               <span className="flex items-center gap-1.5">
-                <Mail size={16} className="text-blue-500" /> {user?.email}
+                <Mail size={16} className="text-blue-500" /> {displayedUser?.email}
               </span>
               <span className="flex items-center gap-1.5">
-                <Calendar size={16} className="text-purple-500" /> Joined {new Date(user?.createdAt || Date.now()).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                <Calendar size={16} className="text-purple-500" /> Joined {new Date(displayedUser?.createdAt || Date.now()).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
               </span>
             </div>
           </div>
@@ -146,15 +170,21 @@ export default function Profile() {
       {/* 3. CONTENT SECTION */}
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h2 className="text-2xl font-black text-slate-900 dark:text-white">Your Activity</h2>
-          <p className="text-slate-500 text-sm font-medium">Manage and track your reported items</p>
+          <h2 className="text-2xl font-black text-slate-900 dark:text-white">
+            {userId ? "User Activity" : "Your Activity"}
+          </h2>
+          <p className="text-slate-500 text-sm font-medium">
+            {userId ? "Browse items posted by this user" : "Manage and track your reported items"}
+          </p>
         </div>
-        <Link 
-          to="/create" 
-          className="flex items-center gap-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-5 py-2.5 rounded-2xl font-bold text-sm transition-opacity hover:opacity-90"
-        >
-          <PlusCircle size={18} /> New Report
-        </Link>
+        {!userId && (
+          <Link 
+            to="/create" 
+            className="flex items-center gap-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-5 py-2.5 rounded-2xl font-bold text-sm transition-opacity hover:opacity-90"
+          >
+            <PlusCircle size={18} /> New Report
+          </Link>
+        )}
       </div>
 
       {items.length === 0 ? (
@@ -164,7 +194,9 @@ export default function Profile() {
           </div>
           <h3 className="text-xl font-bold text-slate-900 dark:text-white">No listings found</h3>
           <p className="text-slate-500 dark:text-slate-400 mt-2 mb-8 max-w-sm mx-auto">
-            You haven't posted any items yet. When you report something lost or found, it will appear here.
+            {userId
+              ? "This user hasn't posted any items yet."
+              : "You haven't posted any items yet. When you report something lost or found, it will appear here."}
           </p>
         </div>
       ) : (
