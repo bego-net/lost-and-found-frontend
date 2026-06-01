@@ -1,14 +1,16 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import api from "../api/axios";
-import { ArrowLeft, Send, MoreVertical, ShieldCheck, Clock, User } from "lucide-react";
+import { ArrowLeft, Send, MoreVertical, ShieldCheck, Clock, User, Package } from "lucide-react";
 import socket from "../lib/socket";
+import { toImageUrl } from "../lib/utils";
 
 function Conversation() {
   const { itemId, userId } = useParams();
   const currentUser = JSON.parse(localStorage.getItem("user"));
 
   const [messages, setMessages] = useState([]);
+  const [conversationId, setConversationId] = useState(null);
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(true);
   const [otherUserName, setOtherUserName] = useState("");
@@ -18,13 +20,24 @@ function Conversation() {
   const fetchMessages = useCallback(async () => {
     try {
       const { data } = await api.get(`/messages/conversation/${itemId}/${userId}`);
-      setMessages(data);
+      setMessages(data.messages || []);
+      setConversationId(data.conversationId);
 
-      if (data.length > 0) {
-        const firstMsg = data[0];
+      if (data.messages && data.messages.length > 0) {
+        const firstMsg = data.messages[0];
         const otherUser = firstMsg.sender._id === currentUser._id ? firstMsg.receiver : firstMsg.sender;
         setOtherUserName(otherUser?.name || "User");
+      } else {
+        // Fallback: Fetch user details dynamically if no messages exist yet
+        api.get(`/auth/profile/${userId}`)
+          .then((res) => {
+            if (res.data?.user) {
+              setOtherUserName(res.data.user.name);
+            }
+          })
+          .catch(() => setOtherUserName("User"));
       }
+
       await api.put(`/messages/mark-read/${itemId}/${userId}`);
       await api.get("/messages/unread/count");
     } catch (err) {
@@ -39,35 +52,40 @@ function Conversation() {
   }, [fetchMessages]);
 
   useEffect(() => {
-    if (!currentUser?._id) return;
-    socket.emit("joinConversation", itemId);
-    socket.on("receiveMessage", async (newMessage) => {
-      if (newMessage.item !== itemId) return;
-      const isRelated = (newMessage.sender === currentUser._id && newMessage.receiver === userId) ||
-                        (newMessage.sender === userId && newMessage.receiver === currentUser._id);
-      if (!isRelated) return;
+    if (!currentUser?._id || !conversationId) return;
+
+    socket.emit("joinConversation", conversationId);
+
+    const handleMessage = async (newMessage) => {
+      if (newMessage.conversation !== conversationId) return;
 
       setMessages((prev) => [...prev, newMessage]);
 
-      if (newMessage.sender === userId) {
+      const isSenderOther = newMessage.sender === userId || newMessage.sender?._id === userId;
+      if (isSenderOther) {
         await api.put(`/messages/mark-read/${itemId}/${userId}`);
         await api.get("/messages/unread/count");
       }
-    });
-    return () => { socket.off("receiveMessage"); };
-  }, [itemId, userId, currentUser]);
+    };
+
+    socket.on("receiveMessage", handleMessage);
+
+    return () => {
+      socket.off("receiveMessage", handleMessage);
+    };
+  }, [conversationId, itemId, userId, currentUser?._id]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
   const sendMessage = () => {
-    if (!text.trim()) return;
+    if (!text.trim() || !conversationId) return;
     const messageData = {
       sender: currentUser._id,
       receiver: userId,
-      item: itemId,
-      conversation: itemId,
+      item: itemId || undefined,
+      conversation: conversationId,
       content: text,
     };
     socket.emit("sendMessage", messageData);
@@ -120,9 +138,30 @@ function Conversation() {
           </div>
         ) : (
           messages.map((msg, idx) => {
-            const isMe = msg.sender._id === currentUser._id || msg.sender === currentUser._id;
+            const isMe = msg.sender === currentUser._id || msg.sender?._id === currentUser._id;
+            const showItemPreview = msg.item && typeof msg.item === "object" && msg.item.title;
+
             return (
-              <div key={msg._id || idx} className={`flex ${isMe ? "justify-end" : "justify-start"} animate-fadeIn`}>
+              <div key={msg._id || idx} className={`flex flex-col ${isMe ? "items-end" : "items-start"} animate-fadeIn`}>
+                {showItemPreview && (
+                  <div className="mb-2 p-3 bg-white dark:bg-slate-800 rounded-2xl flex items-center gap-3 max-w-xs border border-slate-200/60 dark:border-slate-700/60 shadow-sm">
+                    {msg.item.images?.[0] ? (
+                      <img
+                        src={toImageUrl(msg.item.images[0])}
+                        alt={msg.item.title}
+                        className="w-10 h-10 rounded-lg object-cover flex-shrink-0"
+                      />
+                    ) : (
+                      <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400 flex-shrink-0">
+                        <Package size={16} />
+                      </div>
+                    )}
+                    <div className="min-w-0">
+                      <p className="text-[9px] uppercase font-bold tracking-widest text-slate-400 leading-none">Inquiry About</p>
+                      <p className="text-xs font-black text-slate-900 dark:text-white truncate mt-1 leading-tight">{msg.item.title}</p>
+                    </div>
+                  </div>
+                )}
                 <div className={`group relative max-w-[80%] sm:max-w-md ${isMe ? "items-end" : "items-start"}`}>
                   <div className={`px-5 py-3 rounded-[1.5rem] text-sm font-medium shadow-sm transition-all ${
                     isMe 

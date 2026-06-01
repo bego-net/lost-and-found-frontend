@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import api from "../api/axios";
-import { ArrowLeft, MessageSquare, Search, User, Clock, ChevronRight } from "lucide-react";
+import { ArrowLeft, MessageSquare, User, Clock, ChevronRight } from "lucide-react";
 import socket from "../lib/socket";
+import { toImageUrl } from "../lib/utils";
 
 export default function ItemMessages() {
   const { itemId } = useParams();
@@ -61,12 +62,13 @@ export default function ItemMessages() {
   useEffect(() => {
     if (!user?._id) return;
     socket.emit("userOnline", user._id);
-    socket.emit("joinConversation", itemId);
     socket.on("updateOnlineUsers", (users) => setOnlineUsers(users));
 
-    socket.on("receiveMessage", async (newMessage) => {
-      if (newMessage.item !== itemId) return;
-      const otherUserId = newMessage.sender === user._id ? newMessage.receiver : newMessage.sender;
+    const handleNewMessage = (newMessage) => {
+      const otherUser = newMessage.sender._id === user._id ? newMessage.receiver : newMessage.sender;
+      const otherUserId = otherUser?._id || otherUser;
+
+      if (!otherUserId) return;
 
       setConversations((prev) => {
         const existing = prev.find((chat) => chat.user._id === otherUserId);
@@ -77,23 +79,26 @@ export default function ItemMessages() {
               : chat
           );
         } else {
-          return [{ user: { _id: otherUserId }, lastMessage: newMessage.content, time: newMessage.createdAt }, ...prev];
+          return [{ user: otherUser, lastMessage: newMessage.content, time: newMessage.createdAt }, ...prev];
         }
       });
 
-      if (newMessage.sender !== user._id) {
+      const isSenderOther = newMessage.sender === otherUserId || newMessage.sender?._id === otherUserId;
+      if (isSenderOther) {
         setUnreadCounts((prev) => ({
           ...prev,
           [otherUserId]: (prev[otherUserId] || 0) + 1,
         }));
       }
-    });
+    };
+
+    socket.on("receiveMessage", handleNewMessage);
 
     return () => {
       socket.off("updateOnlineUsers");
-      socket.off("receiveMessage");
+      socket.off("receiveMessage", handleNewMessage);
     };
-  }, [itemId, user]);
+  }, [user?._id]);
 
   useEffect(() => {
     fetchMessages();
@@ -139,7 +144,7 @@ export default function ItemMessages() {
             </div>
             <p className="text-slate-900 dark:text-white font-bold text-lg">No inquiries yet</p>
             <p className="text-slate-500 dark:text-slate-400 text-sm max-w-xs mx-auto mt-2">
-              When people message you about this item, they will appear here.
+              When people message you, they will appear here.
             </p>
           </div>
         ) : (
@@ -155,9 +160,17 @@ export default function ItemMessages() {
               >
                 {/* Avatar Section */}
                 <div className="relative">
-                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700 flex items-center justify-center text-slate-500 group-hover:shadow-lg transition-all">
-                    <User size={24} />
-                  </div>
+                  {chat.user.profileImage && chat.user.profileImage !== "/uploads/default-profile.png" ? (
+                    <img
+                      src={toImageUrl(chat.user.profileImage)}
+                      alt={chat.user.name}
+                      className="w-14 h-14 rounded-2xl object-cover border border-slate-100 dark:border-slate-800 group-hover:shadow-lg transition-all"
+                    />
+                  ) : (
+                    <div className="w-14 h-14 rounded-2xl bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-black text-lg flex items-center justify-center border border-slate-100 dark:border-slate-800 group-hover:shadow-lg transition-all">
+                      {chat.user.name?.charAt(0).toUpperCase() || "?"}
+                    </div>
+                  )}
                   {isOnline && (
                     <div className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-500 border-4 border-white dark:border-[#0B0F1A] rounded-full" />
                   )}
