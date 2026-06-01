@@ -1,8 +1,10 @@
 import { useEffect, useState, useRef } from "react";
-import api, { API_BASE_URL } from "../api/axios";
+import api from "../api/axios";
 import { useNavigate } from "react-router-dom";
 import { Bell, MessageSquare, Package, Sparkles, CheckCircle2, Clock } from "lucide-react";
 import socket from "../lib/socket";
+import { Avatar, AvatarImage, AvatarFallback } from "./ui/avatar";
+import { toImageUrl } from "../lib/utils";
 
 export default function NotificationBell({ user }) {
   const [notifications, setNotifications] = useState([]);
@@ -78,7 +80,8 @@ export default function NotificationBell({ user }) {
     }
   };
 
-  const unreadCount = notifications.filter((n) => !n.isRead).length;
+  const unreadNotifications = notifications.filter((n) => !n.isRead);
+  const unreadCount = unreadNotifications.length;
 
   const getNotificationDetails = (n) => {
     switch (n.type) {
@@ -133,7 +136,7 @@ export default function NotificationBell({ user }) {
 
       {/* 📦 Dropdown Menu */}
       {open && (
-        <div className="absolute right-0 mt-4 w-[350px] bg-white dark:bg-[#0B0F1A] shadow-[0_20px_50px_rgba(0,0,0,0.2)] rounded-[2rem] border border-slate-200 dark:border-slate-800 z-[100] overflow-hidden animate-in fade-in zoom-in-95 duration-200 origin-top-right">
+        <div className="fixed md:absolute top-[70px] md:top-auto left-4 right-4 md:left-auto md:right-0 w-auto md:w-[350px] bg-white dark:bg-[#0B0F1A] shadow-[0_20px_50px_rgba(0,0,0,0.2)] rounded-[2rem] border border-slate-200 dark:border-slate-800 z-[100] overflow-hidden animate-in fade-in zoom-in-95 duration-200 origin-top md:origin-top-right">
           
           {/* Header */}
           <div className="px-6 py-5 border-b dark:border-slate-800 flex justify-between items-center bg-white dark:bg-slate-900/50">
@@ -152,7 +155,7 @@ export default function NotificationBell({ user }) {
 
           {/* List */}
           <div className="max-h-[420px] overflow-y-auto custom-scrollbar bg-slate-50/30 dark:bg-transparent">
-            {notifications.length === 0 ? (
+            {unreadNotifications.length === 0 ? (
               <div className="py-16 px-6 text-center">
                 <div className="inline-flex p-4 bg-slate-100 dark:bg-slate-800 rounded-2xl mb-3 text-slate-400">
                   <CheckCircle2 size={32} />
@@ -162,7 +165,7 @@ export default function NotificationBell({ user }) {
               </div>
             ) : (
               <div className="divide-y divide-slate-100 dark:divide-slate-800">
-                {notifications.map((n) => {
+                {unreadNotifications.map((n) => {
                   const details = getNotificationDetails(n);
                   return (
                     <div
@@ -174,13 +177,33 @@ export default function NotificationBell({ user }) {
                     >
                       {/* Avatar & Icon */}
                       <div className="relative flex-shrink-0">
-                        <div className="w-12 h-12 rounded-2xl overflow-hidden bg-slate-200 dark:bg-slate-700">
-                          <img
-                            src={n.sender?.profileImage ? `${API_BASE_URL}${n.sender.profileImage}` : `${API_BASE_URL}/uploads/default-profile.png`}
-                            alt="avatar"
-                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                          />
-                        </div>
+                        <Avatar className="w-12 h-12 rounded-2xl overflow-hidden bg-slate-200 dark:bg-slate-700 border border-slate-200/50 dark:border-slate-800">
+                          {n.type === "match" ? (
+                            <>
+                              <AvatarImage
+                                src="https://cdn-icons-png.flaticon.com/512/4712/4712038.png"
+                                alt="FoundLost AI"
+                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                              />
+                              <AvatarFallback className="bg-gradient-to-br from-amber-400 to-orange-500 text-white font-black flex items-center justify-center">
+                                <Sparkles size={20} />
+                              </AvatarFallback>
+                            </>
+                          ) : (
+                            <>
+                              {n.sender?.profileImage ? (
+                                <AvatarImage
+                                  src={toImageUrl(n.sender.profileImage)}
+                                  alt={n.sender?.name || "User"}
+                                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                                />
+                              ) : null}
+                              <AvatarFallback className="bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-black text-lg flex items-center justify-center">
+                                {(n.sender?.name || "U").charAt(0).toUpperCase()}
+                              </AvatarFallback>
+                            </>
+                          )}
+                        </Avatar>
                         <div className={`absolute -bottom-1 -right-1 p-1 rounded-lg shadow-sm border-2 border-white dark:border-[#0B0F1A] ${details.color}`}>
                           {details.icon}
                         </div>
@@ -190,7 +213,7 @@ export default function NotificationBell({ user }) {
                       <div className="flex-1 min-w-0">
                         <div className="flex justify-between items-start mb-0.5">
                           <p className="font-black text-sm text-slate-900 dark:text-white truncate pr-4">
-                            {n.sender?.name || "System"}
+                            {n.type === "match" ? "FoundLost AI" : (n.sender?.name || "User")}
                           </p>
                           {!n.isRead && (
                             <div className="w-2 h-2 bg-blue-500 rounded-full shadow-[0_0_8px_rgba(59,130,246,0.6)] animate-pulse" />
@@ -214,7 +237,7 @@ export default function NotificationBell({ user }) {
           </div>
 
           {/* Footer */}
-          {notifications.length > 0 && (
+          {unreadNotifications.length > 0 && (
             <button 
               className="w-full py-4 bg-slate-50 dark:bg-slate-900/50 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors border-t dark:border-slate-800"
               onClick={() => navigate('/notifications')}

@@ -31,10 +31,10 @@ function AuthProvider({ children }) {
     else localStorage.removeItem("user");
   }, [user]);
 
-  // If token exists but user missing → fetch profile
+  // Fetch latest user profile on load/refresh if token exists to ensure in-sync state
   useEffect(() => {
     const loadUser = async () => {
-      if (!token || user) return;
+      if (!token) return;
 
       setLoading(true);
 
@@ -54,7 +54,7 @@ function AuthProvider({ children }) {
     };
 
     loadUser();
-  }, [token, user]);
+  }, [token]);
 
   return (
     <AuthContext.Provider value={{ token, setToken, user, setUser, loading }}>

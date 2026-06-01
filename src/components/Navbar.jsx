@@ -43,9 +43,10 @@ function Navbar() {
     navigate("/", { replace: true }); // ✅ redirect to home page
   };
 
-  const profileImg = user?.profileImage
+  const hasProfileImage = user?.profileImage && user.profileImage !== "/uploads/default-profile.png";
+  const profileImg = hasProfileImage
     ? toImageUrl(user.profileImage)
-    : "https://cdn-icons-png.flaticon.com/512/847/847969.png";
+    : null;
 
   const closeMenu = () => setOpen(false);
 
@@ -116,7 +117,7 @@ function Navbar() {
             <DropdownMenu>
               <DropdownMenuTrigger className="outline-none">
                 <Avatar className="h-9 w-9 sm:h-10 sm:w-10 cursor-pointer border-2 border-white dark:border-slate-800 ring-1 ring-slate-200 dark:ring-slate-700 hover:ring-blue-500 transition-all">
-                  <AvatarImage src={profileImg} />
+                  {profileImg && <AvatarImage src={profileImg} />}
                   <AvatarFallback className="bg-blue-100 text-blue-600 font-bold">
                     {user?.name?.charAt(0) || "U"}
                   </AvatarFallback>
