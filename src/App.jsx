@@ -42,6 +42,7 @@ const Contact = lazy(() => import("./pages/Contact"));
 
 function AnimatedRoutes() {
   const location = useLocation();
+  const isAdminRoute = location.pathname.startsWith("/admin");
 
   return (
     <AnimatePresence mode="wait">
@@ -51,7 +52,7 @@ function AnimatedRoutes() {
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -10 }}
         transition={{ duration: 0.25 }}
-        className="min-h-screen p-4"
+        className={`min-h-screen ${isAdminRoute ? "" : "p-4"}`}
       >
         <Suspense
           fallback={
@@ -119,16 +120,25 @@ function AnimatedRoutes() {
   );
 }
 
+function AppContent() {
+  const location = useLocation();
+  const isAdminRoute = location.pathname.startsWith("/admin");
+
+  return (
+    <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
+      {!isAdminRoute && <Navbar />}
+      <div className="flex-grow">
+        <AnimatedRoutes />
+      </div>
+      {!isAdminRoute && <Footer />}
+    </div>
+  );
+}
+
 function App() {
   return (
     <Router>
-      <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
-        <Navbar />
-        <div className="flex-grow">
-          <AnimatedRoutes />
-        </div>
-        <Footer />
-      </div>
+      <AppContent />
     </Router>
   );
 }

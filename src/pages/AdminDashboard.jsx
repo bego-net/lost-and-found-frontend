@@ -31,6 +31,18 @@ function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [loading, setLoading] = useState(true);
 
+  // State updates for User & Item Detail editing, message filtering
+  const [isEditingItem, setIsEditingItem] = useState(false);
+  const [showAllMessages, setShowAllMessages] = useState(false);
+  const [editItemForm, setEditItemForm] = useState({
+    title: "",
+    description: "",
+    type: "lost",
+    category: "other",
+    location: "",
+    status: "open",
+  });
+
   const authData = JSON.parse(localStorage.getItem("user") || sessionStorage.getItem("user") || "{}");
   const currentAdminId = authData?._id || authData?.id;
 
@@ -65,6 +77,15 @@ function AdminDashboard() {
     } catch { toast.error("Update failed"); }
   };
 
+  const deleteUser = async (id) => {
+    if (!window.confirm("Confirm permanent user deletion? This will delete the user account.")) return;
+    try {
+      await api.delete(`/admin/users/${id}`);
+      toast.success("User deleted successfully");
+      fetchData();
+    } catch { toast.error("User deletion failed"); }
+  };
+
   const deleteItem = async (id) => {
     if (!window.confirm("Confirm permanent deletion?")) return;
     try {
@@ -84,6 +105,52 @@ function AdminDashboard() {
       setSelectedMessage(null);
     } catch { toast.error("Transmission failed"); }
   };
+
+  const getPresenceText = (user) => {
+    if (!user?.lastSeen) return "Offline";
+
+    const date = new Date(user.lastSeen);
+    const diffMs = Date.now() - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+
+    if (diffMins < 1) return "Active just now";
+    if (diffMins < 60) return `Active ${diffMins}m ago`;
+    if (diffHours < 24) return `Active ${diffHours}h ago`;
+    return `Active on ${date.toLocaleDateString()}`;
+  };
+
+  const handleSelectItem = (item) => {
+    setSelectedItem(item);
+    setEditItemForm({
+      title: item.title,
+      description: item.description,
+      type: item.type,
+      category: item.category,
+      location: item.location,
+      status: item.status || "open"
+    });
+    setIsEditingItem(false);
+  };
+
+  const updateItemDetails = async () => {
+    if (!editItemForm.title.trim() || !editItemForm.description.trim() || !editItemForm.location.trim()) {
+      return toast.error("Please fill all required fields");
+    }
+    try {
+      const res = await api.put(`/items/${selectedItem._id}`, editItemForm);
+      toast.success("Item updated successfully");
+      setIsEditingItem(false);
+      fetchData();
+      setSelectedItem(res.data.item);
+    } catch {
+      toast.error("Failed to update item");
+    }
+  };
+
+  const displayedMessages = showAllMessages
+    ? messages
+    : messages.slice(0, 3);
 
   const filteredUsers = users.filter(u => `${u.name} ${u.email}`.toLowerCase().includes(userSearch.toLowerCase()));
   const filteredItems = items.filter(i => `${i.title}`.toLowerCase().includes(userSearch.toLowerCase()));
@@ -157,22 +224,22 @@ function AdminDashboard() {
           <div className="bg-white dark:bg-slate-900/50 backdrop-blur-md rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden animate-in fade-in slide-in-from-bottom-4">
             <Table headers={["Profile", "Role", "Status", "Management"]}>
               {filteredUsers.map(u => (
-                <tr key={u._id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-all border-b border-slate-50 dark:border-slate-800 group" onClick={()=>setSelectedUser(u)}>
+                <tr key={u._id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-all border-b border-slate-50 dark:border-slate-800 group cursor-pointer" onClick={()=>setSelectedUser(u)}>
                   <td className="p-6">
                     <div className="flex items-center gap-4">
                       <div className="w-12 h-12 rounded-2xl overflow-hidden bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
-  {u.profileImage && u.profileImage !== "/uploads/default-profile.png" ? (
-    <img
-      src={toImageUrl(u.profileImage)}
-      alt={u.name}
-      className="w-full h-full object-cover"
-    />
-  ) : (
-    <span className="font-bold text-slate-600 dark:text-slate-300 text-sm uppercase">
-      {u.name.charAt(0)}
-    </span>
-  )}
-</div>
+                        {u.profileImage && u.profileImage !== "/uploads/default-profile.png" ? (
+                          <img
+                            src={toImageUrl(u.profileImage)}
+                            alt={u.name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <span className="font-bold text-slate-600 dark:text-slate-300 text-sm uppercase">
+                            {u.name.charAt(0)}
+                          </span>
+                        )}
+                      </div>
                       <div>
                         <div className="font-bold text-slate-900 dark:text-slate-100">{u.name}</div>
                         <div className="text-[11px] font-medium text-slate-400">{u.email}</div>
@@ -194,7 +261,7 @@ function AdminDashboard() {
                            onClick={()=>toggleBan(u)} 
                            color={u.isBanned ? "bg-emerald-50 text-emerald-600 hover:bg-emerald-100" : "bg-rose-50 text-rose-600 hover:bg-rose-100"}
                         />
-                        <ActionButton icon={<Trash2 size={14}/>} label="Delete" color="bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-400" />
+                        <ActionButton icon={<Trash2 size={14}/>} label="Delete" onClick={() => deleteUser(u._id)} color="bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-400" />
                       </div>
                     )}
                   </td>
@@ -208,12 +275,18 @@ function AdminDashboard() {
         {activeTab === "items" && (
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 animate-in fade-in slide-in-from-bottom-4">
             {filteredItems.map(item => (
-              <div key={item._id} onClick={()=>setSelectedItem(item)} className="bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 p-8 rounded-[2.5rem] hover:shadow-2xl transition-all group cursor-pointer relative">
+              <div key={item._id} onClick={()=>handleSelectItem(item)} className="bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 p-8 rounded-[2.5rem] hover:shadow-2xl transition-all group cursor-pointer relative">
                 <div className="absolute top-6 right-6 opacity-0 group-hover:opacity-100 transition-opacity">
                     <ArrowUpRight className="text-slate-300" size={20} />
                 </div>
                 <div className="flex gap-6">
-                  <div className="w-16 h-16 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 rounded-3xl flex items-center justify-center group-hover:rotate-6 transition-transform"><Package size={28}/></div>
+                  <div className="w-16 h-16 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 rounded-3xl flex items-center justify-center group-hover:rotate-6 transition-transform overflow-hidden flex-shrink-0">
+                    {item.images?.[0] ? (
+                      <img src={toImageUrl(item.images[0])} alt={item.title} className="w-full h-full object-cover" />
+                    ) : (
+                      <Package size={28}/>
+                    )}
+                  </div>
                   <div className="flex-1">
                     <h3 className="text-lg font-black text-slate-900 dark:text-white tracking-tight">{item.title}</h3>
                     <p className="text-sm text-slate-500 mt-2 line-clamp-2 leading-relaxed">{item.description}</p>
@@ -236,7 +309,7 @@ function AdminDashboard() {
         {/* MESSAGES TAB */}
         {activeTab === "messages" && (
           <div className="grid gap-6 animate-in fade-in slide-in-from-bottom-4">
-            {messages.map(msg => (
+            {displayedMessages.map(msg => (
               <div key={msg._id} className="bg-white dark:bg-slate-900/80 backdrop-blur-md p-8 rounded-[3rem] border border-slate-200 dark:border-slate-800 group transition-all">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8">
                   <div className="flex gap-4">
@@ -255,38 +328,55 @@ function AdminDashboard() {
                 </div>
               </div>
             ))}
+            {messages.length > 3 && (
+              <div className="flex justify-center mt-6">
+                <button
+                  onClick={() => setShowAllMessages(!showAllMessages)}
+                  className="px-8 py-4 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:scale-[1.03] transition-transform shadow-md"
+                >
+                  {showAllMessages ? "See Less Messages" : "See More Messages"}
+                </button>
+              </div>
+            )}
           </div>
         )}
       </main>
 
       {/* MODAL SYSTEM */}
       {(selectedUser || selectedItem || selectedMessage) && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-950/80 backdrop-blur-sm animate-in fade-in" onClick={() => {setSelectedUser(null); setSelectedItem(null); setSelectedMessage(null)}}>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-950/80 backdrop-blur-sm animate-in fade-in" onClick={() => {setSelectedUser(null); setSelectedItem(null); setSelectedMessage(null); setIsEditingItem(false);}}>
           <div className="bg-white dark:bg-slate-900 w-full max-w-lg p-10 rounded-[3.5rem] shadow-2xl relative animate-in zoom-in-95" onClick={e=>e.stopPropagation()}>
-            <button onClick={() => {setSelectedUser(null); setSelectedItem(null); setSelectedMessage(null)}} className="absolute top-10 right-10 text-slate-400 hover:text-rose-500"><X size={24}/></button>
+            <button onClick={() => {setSelectedUser(null); setSelectedItem(null); setSelectedMessage(null); setIsEditingItem(false);}} className="absolute top-10 right-10 text-slate-400 hover:text-rose-500"><X size={24}/></button>
             
             {selectedUser && <>
-              <div className="flex flex-col items-center mb-10">
-              <div className="w-24 h-24 rounded-[2.5rem] overflow-hidden bg-slate-200 flex items-center justify-center">
-  {selectedUser.profileImage &&
-  selectedUser.profileImage !== "/uploads/default-profile.png" ? (
-    <img
-      src={toImageUrl(selectedUser.profileImage)}
-      alt={selectedUser.name}
-      className="w-full h-full object-cover"
-    />
-  ) : (
-    <span className="text-3xl font-bold text-white bg-indigo-600 w-full h-full flex items-center justify-center">
-      {selectedUser.name.charAt(0)}
-    </span>
-  )}
-</div>
+              <div className="flex flex-col items-center mb-6">
+                <div className="relative group mb-4">
+                  <div className="w-24 h-24 rounded-[2.5rem] overflow-hidden bg-slate-200 flex items-center justify-center shadow-lg">
+                    {selectedUser.profileImage && selectedUser.profileImage !== "/uploads/default-profile.png" ? (
+                      <img
+                        src={toImageUrl(selectedUser.profileImage)}
+                        alt={selectedUser.name}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <span className="text-3xl font-black text-white bg-indigo-600 w-full h-full flex items-center justify-center uppercase">
+                        {selectedUser.name.charAt(0)}
+                      </span>
+                    )}
+                  </div>
+                </div>
                 <h3 className="text-3xl font-black dark:text-white tracking-tighter">{selectedUser.name}</h3>
-                <p className="text-xs font-bold text-indigo-500 uppercase tracking-widest mt-2">{selectedUser.role}</p>
+                <p className="text-xs font-bold text-indigo-500 uppercase tracking-widest mt-1.5">{selectedUser.role}</p>
               </div>
-              <div className="space-y-4">
-                <ModalInfo label="Contact" value={selectedUser.email} />
-                <ModalInfo label="Account Standing" value={selectedUser.isBanned ? 'Banned' : 'Active'} color={selectedUser.isBanned ? 'text-rose-500' : 'text-emerald-500'} />
+              <div className="grid grid-cols-2 gap-4 mb-6">
+                <ModalInfo label="Email" value={selectedUser.email} />
+                <ModalInfo label="Join Date" value={new Date(selectedUser.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} />
+                <ModalInfo label="Last Active" value={getPresenceText(selectedUser)} />
+                <ModalInfo label="Total Posts" value={items.filter(i => i.user?._id === selectedUser._id || i.user === selectedUser._id).length} />
+              </div>
+              <div className="space-y-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+                <ModalInfo label="Bio / Contact Info" value={selectedUser.bio || "No biography provided."} />
+                <ModalInfo label="Account Standing" value={selectedUser.isBanned ? 'Restricted' : 'Active'} color={selectedUser.isBanned ? 'text-rose-500' : 'text-emerald-500'} />
               </div>
             </>}
 
@@ -305,12 +395,160 @@ function AdminDashboard() {
               <button onClick={sendReply} className="w-full bg-indigo-600 text-white py-5 rounded-[2rem] font-black uppercase text-xs tracking-[0.2em] hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-200 dark:shadow-none">Transmit Reply</button>
             </>}
 
-            {selectedItem && <>
+            {selectedItem && !isEditingItem && <>
               <h2 className="text-3xl font-black dark:text-white tracking-tighter mb-4">{selectedItem.title}</h2>
-              <div className="bg-slate-50 dark:bg-slate-800/80 p-8 rounded-[2.5rem] text-sm text-slate-600 dark:text-slate-400 font-medium leading-relaxed mb-8">"{selectedItem.description}"</div>
-              <div className="grid grid-cols-2 gap-8 px-4">
+              
+              {selectedItem.images && selectedItem.images.length > 0 && (
+                <div className="grid grid-cols-3 gap-3 mb-6">
+                  {selectedItem.images.map((img, i) => (
+                    <div key={i} className="relative aspect-video rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                      <img src={toImageUrl(img)} alt={`Item img ${i}`} className="w-full h-full object-cover" />
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="bg-slate-50 dark:bg-slate-800/80 p-6 rounded-[2rem] text-sm text-slate-600 dark:text-slate-350 font-medium leading-relaxed mb-6">
+                "{selectedItem.description}"
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 mb-6">
+                <ModalInfo label="Type" value={selectedItem.type.toUpperCase()} color={selectedItem.type === "lost" ? "text-rose-500" : "text-emerald-500"} />
+                <ModalInfo label="Category" value={selectedItem.category} />
+                <ModalInfo label="Location" value={selectedItem.location} />
+                <ModalInfo label="Status" value={selectedItem.status?.toUpperCase() || "OPEN"} color={selectedItem.status === "resolved" ? "text-emerald-500" : "text-amber-500"} />
+                <ModalInfo label="Reporter" value={selectedItem.user?.name || "Unknown"} />
+                <ModalInfo label="Reporter Email" value={selectedItem.user?.email || "N/A"} />
+                <ModalInfo label="Date" value={selectedItem.dateLostOrFound ? new Date(selectedItem.dateLostOrFound).toLocaleDateString() : "N/A"} />
                 <ModalInfo label="Creation Date" value={new Date(selectedItem.createdAt).toLocaleDateString()} />
-                <ModalInfo label="Item Code" value={selectedItem._id.slice(-10).toUpperCase()} />
+              </div>
+
+              <div className="flex gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+                <button
+                  onClick={() => {
+                    setEditItemForm({
+                      title: selectedItem.title,
+                      description: selectedItem.description,
+                      type: selectedItem.type,
+                      category: selectedItem.category,
+                      location: selectedItem.location,
+                      status: selectedItem.status || "open"
+                    });
+                    setIsEditingItem(true);
+                  }}
+                  className="flex-1 py-4 bg-indigo-600 text-white rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-indigo-700 transition-all shadow-md"
+                >
+                  Edit Details
+                </button>
+                <button
+                  onClick={() => {
+                    deleteItem(selectedItem._id);
+                    setSelectedItem(null);
+                  }}
+                  className="px-6 py-4 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-2xl font-black uppercase text-xs tracking-widest transition-all"
+                >
+                  Delete
+                </button>
+              </div>
+            </>}
+
+            {selectedItem && isEditingItem && <>
+              <h2 className="text-3xl font-black dark:text-white tracking-tighter mb-6">Edit Item Details</h2>
+              
+              <div className="space-y-4 max-h-[50vh] overflow-y-auto pr-2 custom-scrollbar">
+                <div>
+                  <label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Title</label>
+                  <input
+                    type="text"
+                    className="w-full mt-1.5 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm outline-none focus:border-indigo-500 transition-all"
+                    value={editItemForm.title}
+                    onChange={e => setEditItemForm({ ...editItemForm, title: e.target.value })}
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Description</label>
+                  <textarea
+                    rows="4"
+                    className="w-full mt-1.5 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm outline-none focus:border-indigo-500 transition-all resize-none"
+                    value={editItemForm.description}
+                    onChange={e => setEditItemForm({ ...editItemForm, description: e.target.value })}
+                    required
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Type</label>
+                    <select
+                      className="w-full mt-1.5 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm outline-none focus:border-indigo-500 transition-all"
+                      value={editItemForm.type}
+                      onChange={e => setEditItemForm({ ...editItemForm, type: e.target.value })}
+                    >
+                      <option value="lost">Lost</option>
+                      <option value="found">Found</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Category</label>
+                    <select
+                      className="w-full mt-1.5 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm outline-none focus:border-indigo-500 transition-all"
+                      value={editItemForm.category}
+                      onChange={e => setEditItemForm({ ...editItemForm, category: e.target.value })}
+                    >
+                      <option value="other">Other</option>
+                      <option value="documents">Documents</option>
+                      <option value="electronics">Electronics</option>
+                      <option value="keys">Keys</option>
+                      <option value="clothing">Clothing</option>
+                      <option value="bags">Bags</option>
+                      <option value="pets">Pets</option>
+                      <option value="jewelry">Jewelry</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Location</label>
+                    <input
+                      type="text"
+                      className="w-full mt-1.5 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm outline-none focus:border-indigo-500 transition-all"
+                      value={editItemForm.location}
+                      onChange={e => setEditItemForm({ ...editItemForm, location: e.target.value })}
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Status</label>
+                    <select
+                      className="w-full mt-1.5 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm outline-none focus:border-indigo-500 transition-all"
+                      value={editItemForm.status}
+                      onChange={e => setEditItemForm({ ...editItemForm, status: e.target.value })}
+                    >
+                      <option value="open">Open</option>
+                      <option value="resolved">Resolved</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-6 border-t border-slate-100 dark:border-slate-800 mt-6">
+                <button
+                  onClick={updateItemDetails}
+                  className="flex-1 py-4 bg-indigo-600 text-white rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-indigo-700 transition-all shadow-md"
+                >
+                  Save Changes
+                </button>
+                <button
+                  onClick={() => setIsEditingItem(false)}
+                  className="px-6 py-4 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-350 rounded-2xl font-black uppercase text-xs tracking-widest transition-all"
+                >
+                  Cancel
+                </button>
               </div>
             </>}
           </div>
