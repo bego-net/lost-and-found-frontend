@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { toImageUrl } from "../lib/utils";
 import "leaflet/dist/leaflet.css";
+import { toast } from "sonner";
 
 // --- FIXING DAYJS ERROR ---
 import dayjs from "dayjs";
@@ -70,6 +71,44 @@ function ItemDetails() {
       fetchUnread();
     }
   }, [user]);
+
+  const handleClaimItem = async () => {
+    try {
+      await api.post(`/items/${id}/claim`);
+      toast.success("Item claimed successfully");
+      const res = await api.get(`/items/${id}`);
+      setItem(res.data.item);
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to claim item");
+    }
+  };
+
+  const handleMarkReturned = async () => {
+    if (!window.confirm("Are you sure you want to mark this item as returned?")) return;
+    try {
+      await api.post(`/items/${id}/return`);
+      toast.success("Item marked as returned");
+      const res = await api.get(`/items/${id}`);
+      setItem(res.data.item);
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to update status");
+    }
+  };
+
+  const handleConfirmReceipt = async () => {
+    if (!window.confirm("Confirm that you have received your item?")) return;
+    try {
+      await api.post(`/items/${id}/received`);
+      toast.success("Confirmed receipt: Item is marked as returned!");
+      const res = await api.get(`/items/${id}`);
+      setItem(res.data.item);
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to confirm receipt");
+    }
+  };
 
   if (loading) {
     return (
@@ -155,7 +194,13 @@ function ItemDetails() {
           {/* RIGHT: SIDEBAR INFO */}
           <div className="lg:col-span-5 space-y-8">
             <div className="bg-white dark:bg-slate-900 rounded-[3rem] p-10 shadow-2xl border border-slate-100 dark:border-slate-800 relative overflow-hidden">
-               <div className={`absolute top-0 right-0 px-8 py-2 font-black uppercase tracking-widest text-[10px] rounded-bl-3xl text-white ${item.type === 'lost' ? 'bg-rose-500' : 'bg-emerald-500'}`}>{item.type}</div>
+               <div className={`absolute top-0 right-0 px-8 py-2 font-black uppercase tracking-widest text-[10px] rounded-bl-3xl text-white ${
+                 item.status === 'returned' ? 'bg-emerald-600' :
+                 item.status === 'claimed' ? 'bg-amber-500' :
+                 item.type === 'lost' ? 'bg-rose-500' : 'bg-emerald-500'
+               }`}>
+                 {item.status === 'returned' ? 'returned' : item.status === 'claimed' ? 'claimed' : item.type}
+               </div>
                <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400 font-black text-[10px] uppercase tracking-[0.2em] mb-4"><Tag size={12} /> {item.category}</div>
                <h1 className="text-4xl font-black text-slate-900 dark:text-white leading-[1.1] mb-6">{item.title}</h1>
                <div className="grid grid-cols-2 gap-4">
@@ -218,22 +263,56 @@ function ItemDetails() {
 
               {/* Action Buttons */}
               <div>
-                {user && user._id !== ownerId ? (
-                  <div className="space-y-4">
-                    <Link to={`/conversation/${item._id}/${ownerId}`} className="w-full flex items-center justify-center gap-3 bg-blue-600 hover:bg-blue-700 text-white py-5 rounded-[2rem] font-black text-lg shadow-2xl transition-all hover:-translate-y-1">
-                      <MessageCircle size={22} /> Message Finder
-                    </Link>
-                    <p className="text-center text-slate-400 text-[10px] font-black uppercase tracking-widest"><ShieldCheck className="inline mr-1 text-emerald-500" size={14}/> Secure Chat Protected</p>
-                  </div>
-                ) : user?._id === ownerId ? (
-                  <div className="grid grid-cols-2 gap-4">
-                    <Link to={`/item/edit/${item._id}`} className="flex items-center justify-center gap-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 py-4 rounded-[1.5rem] font-black hover:opacity-90">Edit</Link>
-                    <Link to={`/my-items/${item._id}/messages`} className="relative flex items-center justify-center gap-2 bg-white dark:bg-slate-800 text-slate-900 dark:text-white border-2 py-4 rounded-[1.5rem] font-black hover:bg-slate-50 transition-all">
-                      Inquiries {unreadCount > 0 && <span className="absolute -top-2 -right-2 bg-rose-500 text-white text-[10px] w-7 h-7 flex items-center justify-center rounded-full ring-4 ring-white dark:ring-slate-900">{unreadCount}</span>}
-                    </Link>
+                {item.status === "returned" ? (
+                  <div className="bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 border border-emerald-200 dark:border-emerald-900 p-5 rounded-[2rem] text-center font-black text-sm uppercase tracking-wider flex items-center justify-center gap-2">
+                    Returned to Owner ✅
                   </div>
                 ) : (
-                  <Link to="/login" className="w-full flex items-center justify-center bg-slate-900 dark:bg-blue-600 text-white py-5 rounded-[2rem] font-black text-lg">Login to Contact</Link>
+                  <>
+                    {user && user._id !== ownerId ? (
+                      <div className="space-y-4">
+                        {item.status === "claimed" ? (
+                          <div className="bg-amber-50 dark:bg-amber-950/20 text-amber-600 border border-amber-200 dark:border-amber-900 p-4 rounded-[1.5rem] text-center font-bold text-xs uppercase tracking-wider">
+                            Claim Pending / Claimed
+                          </div>
+                        ) : (
+                          <button onClick={handleClaimItem} className="w-full flex items-center justify-center gap-3 bg-amber-500 hover:bg-amber-600 text-white py-4 rounded-[1.5rem] font-black text-base shadow-lg transition-all hover:-translate-y-0.5">
+                            Claim Item
+                          </button>
+                        )}
+                        <Link to={`/conversation/${item._id}/${ownerId}`} className="w-full flex items-center justify-center gap-3 bg-blue-600 hover:bg-blue-700 text-white py-5 rounded-[2rem] font-black text-lg shadow-2xl transition-all hover:-translate-y-1">
+                          <MessageCircle size={22} /> Message Finder
+                        </Link>
+                        {user?.role === "admin" && (
+                          <button onClick={handleMarkReturned} className="w-full flex items-center justify-center bg-emerald-600 hover:bg-emerald-700 text-white py-3.5 rounded-xl font-black text-sm transition-all shadow-md mt-4">
+                            Mark as Returned
+                          </button>
+                        )}
+                        <p className="text-center text-slate-400 text-[10px] font-black uppercase tracking-widest"><ShieldCheck className="inline mr-1 text-emerald-500" size={14}/> Secure Chat Protected</p>
+                      </div>
+                    ) : user?._id === ownerId ? (
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          <Link to={`/item/edit/${item._id}`} className="flex items-center justify-center gap-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 py-4 rounded-[1.5rem] font-black hover:opacity-90">Edit</Link>
+                          <Link to={`/my-items/${item._id}/messages`} className="relative flex items-center justify-center gap-2 bg-white dark:bg-slate-800 text-slate-900 dark:text-white border-2 py-4 rounded-[1.5rem] font-black hover:bg-slate-50 transition-all">
+                            Inquiries {unreadCount > 0 && <span className="absolute -top-2 -right-2 bg-rose-500 text-white text-[10px] w-7 h-7 flex items-center justify-center rounded-full ring-4 ring-white dark:ring-slate-900">{unreadCount}</span>}
+                          </Link>
+                        </div>
+                        <div className="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-2">
+                          <button onClick={handleMarkReturned} className="w-full flex items-center justify-center bg-emerald-600 hover:bg-emerald-700 text-white py-3.5 rounded-xl font-black text-sm transition-all shadow-md">
+                            Mark as Returned
+                          </button>
+                          <button onClick={handleConfirmReceipt} className="w-full flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white py-3.5 rounded-xl font-black text-sm transition-all shadow-md">
+                            I Received My Item
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        <Link to="/login" className="w-full flex items-center justify-center bg-slate-900 dark:bg-blue-600 text-white py-5 rounded-[2rem] font-black text-lg">Login to Contact</Link>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             </div>

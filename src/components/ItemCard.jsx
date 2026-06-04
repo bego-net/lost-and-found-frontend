@@ -43,11 +43,13 @@ function ItemCard({ item }) {
         <div className={`
           absolute top-4 left-4 px-4 py-1.5 text-[10px] font-black tracking-widest uppercase rounded-full 
           text-white shadow-lg backdrop-blur-md
-          ${item.type === "lost"
-            ? "bg-rose-500/90"
-            : "bg-emerald-500/90"}
+          ${item.status === "returned"
+            ? "bg-emerald-600/90"
+            : item.type === "lost"
+              ? "bg-rose-500/90"
+              : "bg-emerald-500/90"}
         `}>
-          {item.type}
+          {item.status === "returned" ? "Returned ✅" : item.type}
         </div>
       </div>
 
@@ -71,6 +73,12 @@ function ItemCard({ item }) {
         <h2 className="text-lg font-black text-slate-900 dark:text-white capitalize truncate leading-tight">
           {item.title}
         </h2>
+
+        {item.status === "returned" && (
+          <div className="mt-1 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 border border-emerald-200 dark:border-emerald-900 text-[10px] font-black uppercase tracking-wider">
+            Returned to Owner ✅
+          </div>
+        )}
 
         {/* Description */}
         <p className="text-slate-500 dark:text-slate-400 mt-2 text-xs leading-relaxed line-clamp-2 min-h-[2.5rem]">

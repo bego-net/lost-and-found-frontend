@@ -17,12 +17,19 @@ export default function ItemMessages() {
   const user = JSON.parse(localStorage.getItem("user"));
 
   const fetchMessages = async () => {
+    if (!itemId || itemId === "undefined" || itemId === "null" || !/^[0-9a-fA-F]{24}$/.test(itemId)) {
+      setError("No conversations found. Invalid Item ID.");
+      setLoading(false);
+      return;
+    }
     try {
       const res = await api.get(`/messages/item/${itemId}`);
       const grouped = {};
 
       res.data.forEach((msg) => {
+        if (!msg.sender || !msg.receiver) return;
         const otherUser = msg.sender._id === user._id ? msg.receiver : msg.sender;
+        if (!otherUser || !otherUser._id) return;
 
         if (!grouped[otherUser._id]) {
           grouped[otherUser._id] = {
@@ -65,16 +72,16 @@ export default function ItemMessages() {
     socket.on("updateOnlineUsers", (users) => setOnlineUsers(users));
 
     const handleNewMessage = (newMessage) => {
+      if (!newMessage || !newMessage.sender || !newMessage.receiver) return;
       const otherUser = newMessage.sender._id === user._id ? newMessage.receiver : newMessage.sender;
-      const otherUserId = otherUser?._id || otherUser;
-
-      if (!otherUserId) return;
+      if (!otherUser || !otherUser._id) return;
+      const otherUserId = otherUser._id;
 
       setConversations((prev) => {
-        const existing = prev.find((chat) => chat.user._id === otherUserId);
+        const existing = prev.find((chat) => chat.user?._id === otherUserId);
         if (existing) {
           return prev.map((chat) =>
-            chat.user._id === otherUserId
+            chat.user?._id === otherUserId
               ? { ...chat, lastMessage: newMessage.content, time: newMessage.createdAt }
               : chat
           );
@@ -83,7 +90,7 @@ export default function ItemMessages() {
         }
       });
 
-      const isSenderOther = newMessage.sender === otherUserId || newMessage.sender?._id === otherUserId;
+      const isSenderOther = newMessage.sender._id === otherUserId;
       if (isSenderOther) {
         setUnreadCounts((prev) => ({
           ...prev,
@@ -112,8 +119,11 @@ export default function ItemMessages() {
   );
 
   if (error) return (
-    <div className="max-w-md mx-auto mt-20 p-6 bg-red-50 dark:bg-red-900/10 rounded-3xl text-center">
+    <div className="max-w-md mx-auto mt-20 p-8 bg-red-50 dark:bg-red-900/10 rounded-[2rem] text-center space-y-4">
       <p className="text-red-600 dark:text-red-400 font-bold">{error}</p>
+      <Link to="/my-items" className="inline-flex items-center gap-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-6 py-3 rounded-2xl font-bold text-sm hover:opacity-90 transition-opacity">
+        <ArrowLeft size={16} /> Go to My Items
+      </Link>
     </div>
   );
 

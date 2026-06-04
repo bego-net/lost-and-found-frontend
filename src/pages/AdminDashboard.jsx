@@ -14,12 +14,14 @@ import {
   UserCheck,
   Reply,
   Search,
-  ArrowUpRight
+  ArrowUpRight,
+  Tag,
+  CheckSquare
 } from "lucide-react";
 import { toImageUrl } from "../lib/utils";
 
 function AdminDashboard() {
-  const [stats, setStats] = useState({ totalUsers: 0, totalLostItems: 0, totalFoundItems: 0 });
+  const [stats, setStats] = useState({ totalUsers: 0, totalLostItems: 0, totalFoundItems: 0, claimedCount: 0, returnedCount: 0 });
   const [users, setUsers] = useState([]);
   const [items, setItems] = useState([]);
   const [messages, setMessages] = useState([]);
@@ -212,10 +214,12 @@ function AdminDashboard() {
 
         {/* DASHBOARD TAB */}
         {activeTab === "dashboard" && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 animate-in fade-in slide-in-from-bottom-6 duration-700">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-8 animate-in fade-in slide-in-from-bottom-6 duration-700">
             <StatCard icon={<Users/>} title="Total Users" value={stats.totalUsers} color="from-indigo-500 to-indigo-600" />
             <StatCard icon={<Package/>} title="Lost Items" value={stats.totalLostItems} color="from-rose-500 to-rose-600" />
             <StatCard icon={<CheckCircle/>} title="Found Items" value={stats.totalFoundItems} color="from-emerald-500 to-emerald-600" />
+            <StatCard icon={<Tag/>} title="Claimed Items" value={stats.claimedCount || 0} color="from-amber-500 to-amber-600" />
+            <StatCard icon={<CheckSquare/>} title="Returned Items" value={stats.returnedCount || 0} color="from-teal-500 to-teal-600" />
           </div>
         )}
 
@@ -529,7 +533,11 @@ function AdminDashboard() {
                       value={editItemForm.status}
                       onChange={e => setEditItemForm({ ...editItemForm, status: e.target.value })}
                     >
-                      <option value="open">Open</option>
+                      <option value="open">Open / Active</option>
+                      <option value="lost">Lost</option>
+                      <option value="found">Found</option>
+                      <option value="claimed">Claimed</option>
+                      <option value="returned">Returned</option>
                       <option value="resolved">Resolved</option>
                     </select>
                   </div>

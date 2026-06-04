@@ -84,6 +84,10 @@ function Navbar() {
             Found Items
           </NavLink>
 
+          <NavLink to="/returned-items" className={navLinkClass}>
+            Returned Items
+          </NavLink>
+
           <div className="h-6 w-[1px] bg-slate-200 dark:bg-slate-800 mx-2" />
 
           <NavLink
@@ -178,6 +182,10 @@ function Navbar() {
 
                 <NavLink to="/found-items" onClick={closeMenu} className={navLinkClass}>
                   Found Items
+                </NavLink>
+
+                <NavLink to="/returned-items" onClick={closeMenu} className={navLinkClass}>
+                  Returned Items
                 </NavLink>
 
                 <NavLink

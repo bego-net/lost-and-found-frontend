@@ -76,7 +76,12 @@ function Conversation() {
     const handleMessage = async (newMessage) => {
       if (newMessage.conversation !== conversationId) return;
 
-      setMessages((prev) => [...prev, newMessage]);
+      setMessages((prev) => {
+        if (newMessage._id && prev.some((m) => m._id === newMessage._id)) {
+          return prev;
+        }
+        return [...prev, newMessage];
+      });
 
       const isSenderOther = newMessage.sender === userId || newMessage.sender?._id === userId;
       if (isSenderOther) {
@@ -148,7 +153,14 @@ function Conversation() {
       {/* 1. Telegram-Style Chat Header */}
       <div className="px-6 py-4 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b dark:border-slate-800 flex justify-between items-center z-10">
         <div className="flex items-center gap-4">
-          <Link to={`/my-items/${itemId}/messages`} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors text-slate-500">
+          <Link
+            to={
+              itemId && /^[0-9a-fA-F]{24}$/.test(itemId)
+                ? `/my-items/${itemId}/messages`
+                : "/my-items"
+            }
+            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors text-slate-500"
+          >
             <ArrowLeft size={20} />
           </Link>
           <div className="flex items-center gap-3">
@@ -208,7 +220,7 @@ function Conversation() {
             const showItemPreview = msg.item && typeof msg.item === "object" && msg.item.title;
 
             return (
-              <div key={msg._id || idx} className={`flex flex-col ${isMe ? "items-end" : "items-start"} animate-fadeIn`}>
+              <div key={`${msg._id || ""}-${idx}`} className={`flex flex-col ${isMe ? "items-end" : "items-start"} animate-fadeIn`}>
                 {showItemPreview && (
                   <div className="mb-2 p-3 bg-white dark:bg-slate-800 rounded-2xl flex items-center gap-3 max-w-xs border border-slate-200/60 dark:border-slate-700/60 shadow-sm">
                     {msg.item.images?.[0] ? (

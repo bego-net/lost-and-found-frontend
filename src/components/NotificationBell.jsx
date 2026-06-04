@@ -9,6 +9,7 @@ import { toImageUrl } from "../lib/utils";
 export default function NotificationBell({ user }) {
   const [notifications, setNotifications] = useState([]);
   const [open, setOpen] = useState(false);
+  const [showRead, setShowRead] = useState(false);
 
   const navigate = useNavigate();
   const dropdownRef = useRef(null);
@@ -76,13 +77,20 @@ export default function NotificationBell({ user }) {
 
   const handleClick = async (notification) => {
     try {
-      await api.put(`/notifications/${notification._id}/read`);
+      if (notification._id && !notification._id.startsWith("msg-")) {
+        await api.put(`/notifications/${notification._id}/read`);
+      }
       setNotifications((prev) =>
         prev.map((n) => (n._id === notification._id ? { ...n, isRead: true } : n))
       );
       window.dispatchEvent(new Event("notificationsUpdated"));
       const itemId = notification.item?._id || notification.item;
-      if (itemId) navigate(`/item/${itemId}`);
+      const senderId = notification.sender?._id || notification.sender;
+      if (notification.type === "message" && itemId && senderId) {
+        navigate(`/conversation/${itemId}/${senderId}`);
+      } else if (itemId) {
+        navigate(`/item/${itemId}`);
+      }
       setOpen(false);
     } catch (err) {
       console.error("Notification click error:", err);
@@ -91,6 +99,9 @@ export default function NotificationBell({ user }) {
 
   const unreadNotifications = notifications.filter((n) => !n.isRead);
   const unreadCount = unreadNotifications.length;
+  const displayedNotifications = showRead
+    ? notifications
+    : unreadNotifications;
 
   const getNotificationDetails = (n) => {
     switch (n.type) {
@@ -164,83 +175,101 @@ export default function NotificationBell({ user }) {
 
           {/* List */}
           <div className="max-h-[420px] overflow-y-auto custom-scrollbar bg-slate-50/30 dark:bg-transparent">
-            {unreadNotifications.length === 0 ? (
+            {notifications.length === 0 ? (
               <div className="py-16 px-6 text-center">
                 <div className="inline-flex p-4 bg-slate-100 dark:bg-slate-800 rounded-2xl mb-3 text-slate-400">
                   <CheckCircle2 size={32} />
                 </div>
                 <p className="text-slate-900 dark:text-white font-bold text-sm">All caught up!</p>
-                <p className="text-slate-500 text-xs mt-1">No new notifications at the moment.</p>
+                <p className="text-slate-500 text-xs mt-1">No notifications at the moment.</p>
               </div>
             ) : (
               <div className="divide-y divide-slate-100 dark:divide-slate-800">
-                {unreadNotifications.map((n) => {
-                  const details = getNotificationDetails(n);
-                  return (
-                    <div
-                      key={n._id}
-                      onClick={() => handleClick(n)}
-                      className={`group relative flex gap-4 p-5 cursor-pointer transition-all hover:bg-white dark:hover:bg-slate-800 ${
-                        !n.isRead ? "bg-white dark:bg-slate-900/40" : ""
-                      }`}
-                    >
-                      {/* Avatar & Icon */}
-                      <div className="relative flex-shrink-0">
-                        <Avatar className="w-12 h-12 rounded-2xl overflow-hidden bg-slate-200 dark:bg-slate-700 border border-slate-200/50 dark:border-slate-800">
-                          {n.type === "match" ? (
-                            <>
-                              <AvatarImage
-                                src="https://cdn-icons-png.flaticon.com/512/4712/4712038.png"
-                                alt="FoundLost AI"
-                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                              />
-                              <AvatarFallback className="bg-gradient-to-br from-amber-400 to-orange-500 text-white font-black flex items-center justify-center">
-                                <Sparkles size={20} />
-                              </AvatarFallback>
-                            </>
-                          ) : (
-                            <>
-                              {n.sender?.profileImage ? (
+                {displayedNotifications.length === 0 ? (
+                  <div className="py-8 px-6 text-center">
+                    <p className="text-slate-500 text-xs">No unread notifications.</p>
+                  </div>
+                ) : (
+                  displayedNotifications.map((n, idx) => {
+                    const details = getNotificationDetails(n);
+                    return (
+                      <div
+                        key={`${n._id || ""}-${idx}`}
+                        onClick={() => handleClick(n)}
+                        className={`group relative flex gap-4 p-5 cursor-pointer transition-all hover:bg-white dark:hover:bg-slate-800 ${
+                          !n.isRead ? "bg-white dark:bg-slate-900/40" : ""
+                        }`}
+                      >
+                        {/* Avatar & Icon */}
+                        <div className="relative flex-shrink-0">
+                          <Avatar className="w-12 h-12 rounded-2xl overflow-hidden bg-slate-200 dark:bg-slate-700 border border-slate-200/50 dark:border-slate-800">
+                            {n.type === "match" ? (
+                              <>
                                 <AvatarImage
-                                  src={toImageUrl(n.sender.profileImage)}
-                                  alt={n.sender?.name || "User"}
+                                  src="https://cdn-icons-png.flaticon.com/512/4712/4712038.png"
+                                  alt="FoundLost AI"
                                   className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                                 />
-                              ) : null}
-                              <AvatarFallback className="bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-black text-lg flex items-center justify-center">
-                                {(n.sender?.name || "U").charAt(0).toUpperCase()}
-                              </AvatarFallback>
-                            </>
-                          )}
-                        </Avatar>
-                        <div className={`absolute -bottom-1 -right-1 p-1 rounded-lg shadow-sm border-2 border-white dark:border-[#0B0F1A] ${details.color}`}>
-                          {details.icon}
+                                <AvatarFallback className="bg-gradient-to-br from-amber-400 to-orange-500 text-white font-black flex items-center justify-center">
+                                  <Sparkles size={20} />
+                                </AvatarFallback>
+                              </>
+                            ) : (
+                              <>
+                                {n.sender?.profileImage ? (
+                                  <AvatarImage
+                                    src={toImageUrl(n.sender.profileImage)}
+                                    alt={n.sender?.name || "User"}
+                                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                                  />
+                                ) : null}
+                                <AvatarFallback className="bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-black text-lg flex items-center justify-center">
+                                  {(n.sender?.name || "U").charAt(0).toUpperCase()}
+                                </AvatarFallback>
+                              </>
+                            )}
+                          </Avatar>
+                          <div className={`absolute -bottom-1 -right-1 p-1 rounded-lg shadow-sm border-2 border-white dark:border-[#0B0F1A] ${details.color}`}>
+                            {details.icon}
+                          </div>
                         </div>
-                      </div>
 
-                      {/* Content */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex justify-between items-start mb-0.5">
-                          <p className="font-black text-sm text-slate-900 dark:text-white truncate pr-4">
-                            {n.type === "match" ? "FoundLost AI" : (n.sender?.name || "User")}
+                        {/* Content */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex justify-between items-start mb-0.5">
+                            <p className="font-black text-sm text-slate-900 dark:text-white truncate pr-4">
+                              {n.type === "match" ? "FoundLost AI" : (n.sender?.name || "User")}
+                            </p>
+                            {!n.isRead && (
+                              <div className="w-2 h-2 bg-blue-500 rounded-full shadow-[0_0_8px_rgba(59,130,246,0.6)] animate-pulse" />
+                            )}
+                          </div>
+                          <p className={`text-xs leading-relaxed mb-2 ${!n.isRead ? "text-slate-700 dark:text-slate-200 font-medium" : "text-slate-500 dark:text-slate-400"}`}>
+                            {details.text}
                           </p>
-                          {!n.isRead && (
-                            <div className="w-2 h-2 bg-blue-500 rounded-full shadow-[0_0_8px_rgba(59,130,246,0.6)] animate-pulse" />
-                          )}
-                        </div>
-                        <p className={`text-xs leading-relaxed mb-2 ${!n.isRead ? "text-slate-700 dark:text-slate-200 font-medium" : "text-slate-500 dark:text-slate-400"}`}>
-                          {details.text}
-                        </p>
-                        <div className="flex items-center gap-1.5 text-slate-400">
-                          <Clock size={10} />
-                          <span className="text-[10px] font-bold uppercase tracking-tight">
-                            {new Date(n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                          </span>
+                          <div className="flex items-center gap-1.5 text-slate-400">
+                            <Clock size={10} />
+                            <span className="text-[10px] font-bold uppercase tracking-tight">
+                              {new Date(n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })
+                )}
+
+                {/* See More Messages / See Less Toggle */}
+                {notifications.some((n) => n.isRead) && (
+                  <div className="p-3 text-center border-t dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/30">
+                    <button
+                      onClick={() => setShowRead((prev) => !prev)}
+                      className="px-4 py-2 text-xs font-black uppercase tracking-wider text-blue-600 dark:text-blue-400 hover:underline"
+                    >
+                      {showRead ? "See Less" : "See More Messages"}
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>
