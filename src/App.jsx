@@ -16,6 +16,7 @@ const Login = lazy(() => import("./pages/Login"));
 const Register = lazy(() => import("./pages/Register"));
 const CreateItem = lazy(() => import("./pages/CreateItem"));
 const ItemDetails = lazy(() => import("./pages/ItemDetails"));
+const AIMatchResults = lazy(() => import("./pages/AIMatchResults"));
 const LostItems = lazy(() => import("./pages/LostItems"));
 const FoundItems = lazy(() => import("./pages/FoundItems"));
 const ReturnedItems = lazy(() => import("./pages/ReturnedItems"));
@@ -77,6 +78,8 @@ function AnimatedRoutes() {
           {/* ================= ITEMS ================= */}
           <Route path="/create" element={<CreateItem />} />
           <Route path="/item/:id" element={<ItemDetails />} />
+          <Route path="/item/:id/matches" element={<AIMatchResults />} />
+          <Route path="/items/:id/matches" element={<AIMatchResults />} />
           <Route path="/item/edit/:id" element={<EditItem />} />
 
           {/* ================= LISTS ================= */}
