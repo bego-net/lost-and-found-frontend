@@ -1,4 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useContext } from "react";
+import { useNavigate } from "react-router-dom";
+import AuthContext from "../context/AuthContext";
 import api from "../api/axios";
 import { toast } from "sonner";
 import {
@@ -16,11 +18,15 @@ import {
   Search,
   ArrowUpRight,
   Tag,
-  CheckSquare
+  CheckSquare,
+  LogOut
 } from "lucide-react";
 import { toImageUrl } from "../lib/utils";
 
 function AdminDashboard() {
+  const navigate = useNavigate();
+  const { token, setToken, setUser } = useContext(AuthContext);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [stats, setStats] = useState({ totalUsers: 0, totalLostItems: 0, totalFoundItems: 0, claimedCount: 0, returnedCount: 0 });
   const [users, setUsers] = useState([]);
   const [items, setItems] = useState([]);
@@ -67,7 +73,27 @@ function AdminDashboard() {
     }
   };
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => {
+    if (!token) {
+      navigate("/login", { replace: true });
+    } else {
+      fetchData();
+    }
+  }, [token, navigate]);
+
+  const handleLogout = () => {
+    setToken(null);
+    setUser(null);
+
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    sessionStorage.removeItem("token");
+    sessionStorage.removeItem("user");
+
+    toast.success("Logged out successfully");
+    setShowLogoutModal(false);
+    navigate("/login", { replace: true });
+  };
 
   const toggleBan = async (user) => {
     if (user._id === currentAdminId) return toast.error("Action denied: Admin self-restriction");
@@ -186,8 +212,17 @@ function AdminDashboard() {
             <SidebarItem icon={<Mail size={20}/>} label="Messages" active={activeTab === "messages"} onClick={()=>setActiveTab("messages")} />
           </nav>
 
-          <div className="p-4 bg-indigo-50/50 dark:bg-indigo-900/10 rounded-3xl border border-indigo-100 dark:border-indigo-900/20">
-            <p className="text-[10px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest text-center">System Secure</p>
+          <div className="space-y-3">
+            <div className="p-4 bg-indigo-50/50 dark:bg-indigo-900/10 rounded-3xl border border-indigo-100 dark:border-indigo-900/20">
+              <p className="text-[10px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest text-center">System Secure</p>
+            </div>
+            <button
+              onClick={() => setShowLogoutModal(true)}
+              className="w-full flex items-center justify-center gap-2 p-3.5 bg-rose-50 dark:bg-rose-950/30 hover:bg-rose-100 dark:hover:bg-rose-900/40 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-900/50 rounded-2xl font-bold text-xs transition-all shadow-sm active:scale-95"
+            >
+              <LogOut size={16} />
+              <span>Logout</span>
+            </button>
           </div>
         </div>
       </aside>
@@ -202,13 +237,23 @@ function AdminDashboard() {
             <h1 className="text-5xl font-black tracking-tighter text-slate-900 dark:text-white capitalize">{activeTab}</h1>
           </div>
           
-          <div className="relative group">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors" size={18} />
-            <input 
-              placeholder="Search database..." 
-              className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl pl-12 pr-6 py-4 text-sm focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none w-full md:w-96 shadow-sm"
-              value={userSearch} onChange={e=>setUserSearch(e.target.value)}
-            />
+          <div className="flex items-center gap-4 w-full md:w-auto">
+            <div className="relative group flex-1 md:w-96">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors" size={18} />
+              <input 
+                placeholder="Search database..." 
+                className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl pl-12 pr-6 py-4 text-sm focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none w-full shadow-sm"
+                value={userSearch} onChange={e=>setUserSearch(e.target.value)}
+              />
+            </div>
+            <button
+              onClick={() => setShowLogoutModal(true)}
+              className="flex items-center gap-2 px-5 py-4 bg-rose-50 dark:bg-rose-950/30 hover:bg-rose-100 dark:hover:bg-rose-900/40 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-900/50 rounded-2xl font-bold text-xs transition-all shadow-sm active:scale-95 shrink-0"
+              title="Logout from Admin Dashboard"
+            >
+              <LogOut size={18} />
+              <span className="hidden sm:inline">Logout</span>
+            </button>
           </div>
         </header>
 
@@ -559,6 +604,37 @@ function AdminDashboard() {
                 </button>
               </div>
             </>}
+          </div>
+        </div>
+      )}
+      {/* LOGOUT CONFIRMATION MODAL */}
+      {showLogoutModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-200" onClick={() => setShowLogoutModal(false)} />
+          <div className="relative bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[2.5rem] p-8 max-w-md w-full shadow-2xl space-y-6 animate-in zoom-in-95 duration-200">
+            <div className="w-14 h-14 bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 rounded-2xl flex items-center justify-center mx-auto">
+              <LogOut size={28} />
+            </div>
+            <div className="text-center space-y-2">
+              <h3 className="text-2xl font-black text-slate-900 dark:text-white">Confirm Logout</h3>
+              <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
+                Are you sure you want to log out of the Admin Dashboard?
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-4 pt-2">
+              <button
+                onClick={() => setShowLogoutModal(false)}
+                className="w-full py-3.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 rounded-2xl font-bold text-sm transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleLogout}
+                className="w-full py-3.5 bg-rose-600 hover:bg-rose-700 text-white rounded-2xl font-bold text-sm shadow-lg shadow-rose-500/25 transition-all"
+              >
+                Logout
+              </button>
+            </div>
           </div>
         </div>
       )}
