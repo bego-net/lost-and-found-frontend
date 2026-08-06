@@ -37,6 +37,7 @@ function CreateItem() {
   const [submitError, setSubmitError] = useState("");
 
   const [matches, setMatches] = useState([]);
+  const [createdItem, setCreatedItem] = useState(null);
   const [showPopup, setShowPopup] = useState(false);
 
   useEffect(() => {
@@ -164,9 +165,25 @@ function CreateItem() {
       });
 
       const res = await request;
+      const newItem = res?.data?.item;
 
-      if (res?.data?.matches?.length > 0) {
-        setMatches(res.data.matches);
+      if (newItem) {
+        setCreatedItem(newItem);
+        let fetchedMatches = res?.data?.matches || [];
+
+        // If background matching was asynchronous, fetch matches from API
+        if (!fetchedMatches || fetchedMatches.length === 0) {
+          try {
+            const matchRes = await api.get(`/items/${newItem._id}/matches`, {
+              headers: { Authorization: `Bearer ${token}` },
+            });
+            fetchedMatches = matchRes?.data?.matches || [];
+          } catch (mErr) {
+            console.warn("Match retrieval info:", mErr);
+          }
+        }
+
+        setMatches(fetchedMatches);
         setShowPopup(true);
       } else {
         setTimeout(() => navigate("/"), 1500);
@@ -381,8 +398,16 @@ function CreateItem() {
 
         {showPopup && (
           <AIMatchPopup
+            createdItem={createdItem}
             matches={matches}
-            onClose={() => setShowPopup(false)}
+            onClose={() => {
+              setShowPopup(false);
+              if (createdItem?._id) {
+                navigate(`/item/${createdItem._id}`);
+              } else {
+                navigate("/");
+              }
+            }}
           />
         )}
       </div>
