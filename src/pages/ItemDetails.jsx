@@ -6,7 +6,7 @@ import { MapContainer, TileLayer, Marker, useMap } from "react-leaflet";
 import { 
   ChevronLeft, ChevronRight, MapPin, Tag, Calendar, 
   MessageCircle, Edit3, ArrowLeft, Info, Sparkles, 
-  ShieldCheck, Share2, Clock 
+  ShieldCheck, Share2, Clock, BrainCircuit, RotateCw 
 } from "lucide-react";
 import { toImageUrl } from "../lib/utils";
 import "leaflet/dist/leaflet.css";
@@ -40,6 +40,9 @@ function ItemDetails() {
   const [loading, setLoading] = useState(true);
   const [sliderIndex, setSliderIndex] = useState(0);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [aiMatches, setAiMatches] = useState([]);
+  const [loadingMatches, setLoadingMatches] = useState(false);
+  const [refreshingMatches, setRefreshingMatches] = useState(false);
 
   useEffect(() => {
     const fetchItemData = async () => {
@@ -57,6 +60,50 @@ function ItemDetails() {
     fetchItemData();
     window.scrollTo(0, 0);
   }, [id]);
+
+  useEffect(() => {
+    if (location.state?.scrollToMatches || location.hash === "#ai-matches") {
+      const timer = setTimeout(() => {
+        const matchElem = document.getElementById("ai-matches");
+        if (matchElem) {
+          matchElem.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [location, loading, loadingMatches]);
+
+  useEffect(() => {
+    const fetchMatches = async () => {
+      if (!id) return;
+      setLoadingMatches(true);
+      try {
+        const { data } = await api.get(`/items/${id}/matches`);
+        setAiMatches(data.matches || []);
+      } catch (err) {
+        console.error("Failed to fetch AI matches:", err);
+      } finally {
+        setLoadingMatches(false);
+      }
+    };
+
+    fetchMatches();
+  }, [id]);
+
+  const handleRefreshMatches = async () => {
+    if (!id) return;
+    setRefreshingMatches(true);
+    try {
+      const { data } = await api.post(`/items/${id}/refresh-matches`);
+      setAiMatches(data.matches || []);
+      toast.success("AI matches recalculated!");
+    } catch (err) {
+      console.error("Failed to refresh AI matches:", err);
+      toast.error("Failed to refresh AI matches");
+    } finally {
+      setRefreshingMatches(false);
+    }
+  };
 
   useEffect(() => {
     if (user) {
@@ -317,6 +364,113 @@ function ItemDetails() {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* AI SUGGESTED MATCHES SECTION */}
+        <div id="ai-matches" className="mt-16 bg-white dark:bg-slate-900 rounded-[3rem] p-8 sm:p-10 shadow-2xl border border-slate-100 dark:border-slate-800">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-blue-100 dark:bg-blue-500/10 rounded-2xl text-blue-600 dark:text-blue-400">
+                <BrainCircuit size={28} className="animate-pulse" />
+              </div>
+              <div>
+                <h2 className="text-2xl font-black text-slate-900 dark:text-white leading-tight flex items-center gap-2">
+                  AI Suggested Matches
+                </h2>
+                <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
+                  Hybrid CLIP vision & metadata similarity recommendations
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={handleRefreshMatches}
+              disabled={refreshingMatches}
+              className="flex items-center gap-2 px-5 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 rounded-2xl font-bold text-xs transition-all disabled:opacity-50"
+            >
+              <RotateCw size={14} className={refreshingMatches ? "animate-spin" : ""} />
+              {refreshingMatches ? "Recalculating..." : "Refresh AI Matches"}
+            </button>
+          </div>
+
+          {loadingMatches ? (
+            <div className="py-12 text-center text-slate-400 font-bold text-sm">
+              <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+              Searching for visual & text similarities...
+            </div>
+          ) : aiMatches.length === 0 ? (
+            <div className="py-12 text-center bg-slate-50 dark:bg-slate-800/40 rounded-[2.5rem] border border-dashed border-slate-200 dark:border-slate-700">
+              <Sparkles className="mx-auto text-slate-300 dark:text-slate-600 mb-2" size={40} />
+              <p className="font-bold text-slate-700 dark:text-slate-300">No high-confidence AI matches found yet</p>
+              <p className="text-xs text-slate-400 mt-1">Try clicking "Refresh AI Matches" as new items are added to the platform.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {aiMatches.map((m) => {
+                const matchItem = m.item;
+                if (!matchItem) return null;
+                const matchScore = m.similarity || m.scores?.overallScore || 0;
+                const visionScore = m.scores?.visionScore || 0;
+                const textScore = m.scores?.textScore || 0;
+
+                return (
+                  <div
+                    key={m._id || matchItem._id}
+                    onClick={() => navigate(`/item/${matchItem._id}`)}
+                    className="group bg-slate-50 dark:bg-slate-800/40 hover:bg-blue-50 dark:hover:bg-blue-900/20 border border-slate-200 dark:border-slate-800 hover:border-blue-300 dark:hover:border-blue-700 rounded-[2.5rem] p-5 cursor-pointer transition-all duration-300 hover:-translate-y-1 shadow-sm hover:shadow-xl"
+                  >
+                    <div className="relative aspect-video rounded-[1.8rem] overflow-hidden mb-4 bg-slate-200 dark:bg-slate-700">
+                      {matchItem.images && matchItem.images.length > 0 ? (
+                        <img
+                          src={toImageUrl(matchItem.images[0])}
+                          alt={matchItem.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-slate-400">
+                          <Sparkles size={32} />
+                        </div>
+                      )}
+                      <div className="absolute top-3 right-3 px-3 py-1 bg-slate-900/80 backdrop-blur-md text-white rounded-full font-black text-xs">
+                        {matchScore}% Match
+                      </div>
+                    </div>
+
+                    <h3 className="font-black text-slate-900 dark:text-white truncate text-base group-hover:text-blue-600 transition-colors">
+                      {matchItem.title}
+                    </h3>
+
+                    <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium">
+                      <MapPin size={12} className="text-blue-500" />
+                      <span className="truncate">{matchItem.location || "No location"}</span>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-1.5 mt-4 pt-3 border-t border-slate-200/60 dark:border-slate-700/60 text-[10px] font-bold">
+                      {visionScore > 0 && (
+                        <span className="px-2 py-0.5 rounded-md bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-300">
+                          📷 {visionScore}% Visual
+                        </span>
+                      )}
+                      {textScore > 0 && (
+                        <span className="px-2 py-0.5 rounded-md bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-300">
+                          📝 {textScore}% Text
+                        </span>
+                      )}
+                      {(m.scores?.categoryScore || 0) > 0 && (
+                        <span className="px-2 py-0.5 rounded-md bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-300">
+                          🏷️ {m.scores.categoryScore}% Cat
+                        </span>
+                      )}
+                      {(m.scores?.locationScore || 0) > 0 && (
+                        <span className="px-2 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-300">
+                          📍 {m.scores.locationScore}% Loc
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
     </div>
